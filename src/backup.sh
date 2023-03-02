@@ -9,6 +9,10 @@ function info {
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
+function _sshRemoteExec() {
+	ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $@
+}
+
 function _startStoppedContainer() {
 	if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
 	  info "Starting containers back up"
@@ -139,7 +143,7 @@ then
 	  info "Uploading backup by means of SCP"
 	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
+		_sshRemoteExec $PRE_SSH_COMMAND
 	  fi
 	  echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
 	  _influxdbTimeUpload="$(date +%s.%N)"
@@ -148,7 +152,7 @@ then
 	  _influxdbTimeUploaded="$(date +%s.%N)"
 	  if [ ! -z "$POST_SSH_COMMAND" ]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
-		ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $POST_SSH_COMMAND
+		_sshRemoteExec $POST_SSH_COMMAND
 	  fi
 	fi
 
@@ -181,11 +185,11 @@ else
 		info "Uploading backup On-The by means of SSH"
 		
 		echo -n "Test Connection... " && \
-			if ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST:$SSH_PORT "echo > /dev/null" ; then echo "Successfull"; else echo "Failed" && exit 1; fi
+			if _sshRemoteExec "echo > /dev/null" ; then echo "Successfull"; else echo "Failed" && exit 1; fi
 		
 		if [ ! -z "$PRE_SSH_COMMAND" ]; then
 			echo "Pre-scp command: $PRE_SSH_COMMAND"
-			ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
+			_sshRemoteExec $PRE_SSH_COMMAND
 		fi		
 
 		_influxdbTimeUpload="0"
@@ -193,14 +197,14 @@ else
 		
 		_influxdbTimeBackup="$(date +%s.%N)"		
 		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		tar -zcv $BACKUP_SOURCES | ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		tar -zcv $BACKUP_SOURCES | _sshRemoteExec "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
 		echo "Upload finished"
 		_influxdbTimeBackedUp="$(date +%s.%N)"
-		_influxdbBackupSize="$(ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"
+		_influxdbBackupSize="$(_sshRemoteExec "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"
 		
 		if [ ! -z "$POST_SSH_COMMAND" ]; then
 			echo "Post-scp command: $POST_SSH_COMMAND"
-			ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $POST_SSH_COMMAND
+			_sshRemoteExec $POST_SSH_COMMAND
 		fi
 	fi
 
