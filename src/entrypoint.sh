@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Exit immediately on error
 set -e
@@ -31,6 +31,7 @@ POST_BACKUP_COMMAND="${POST_BACKUP_COMMAND:-}"
 PRE_SSH_COMMAND="${PRE_SSH_COMMAND:-}"
 POST_SSH_COMMAND="${POST_SSH_COMMAND:-}"
 SSH_HOST="${SSH_HOST:-}"
+SSH_PORT="${SSH_PORT:-22}"
 SSH_USER="${SSH_USER:-}"
 SSH_REMOTE_PATH="${SSH_REMOTE_PATH:-}"
 
@@ -63,8 +64,8 @@ fi
 
 # Add our cron entry, and direct stdout & stderr to Docker commands stdout
 echo "Installing cron.d entry: docker-volume-backup"
-echo "$BACKUP_CRON_EXPRESSION root /root/backup.sh > /proc/1/fd/1 2>&1" > /etc/cron.d/docker-volume-backup
+echo "$BACKUP_CRON_EXPRESSION /root/backup.sh > /proc/1/fd/1 2>&1" >> /var/spool/cron/crontabs/root
 
 # Let cron take the wheel
 echo "Starting cron in foreground with expression: $BACKUP_CRON_EXPRESSION"
-cron -f
+crond -f

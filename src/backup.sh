@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/sh -ex
 
 # Cronjobs don't inherit their env, so load from file
 source env.sh
@@ -8,6 +8,30 @@ function info {
   reset="\033[0m"
   echo -e "\n$bold[INFO] $1$reset\n"
 }
+
+function _startContainer() {
+	if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
+	  info "Starting containers back up"
+	  docker start $CONTAINERS_TO_STOP
+	fi
+}
+
+function _execPostBackupCommand() {
+	if [ -S "$DOCKER_SOCK" ]; then
+	  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
+		name="$(docker ps --filter id=$id --format '{{.Names}}')"
+		cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
+		info "Post-exec command for: $name"
+		echo docker exec $id $cmd # echo the command we're using, for debuggability
+		eval docker exec $id $cmd
+	  done
+	fi
+}
+
+
+SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
+
+# ---- 
 
 if [ "$CHECK_HOST" != "false" ]; then
   info "Check host availability"
@@ -70,8 +94,8 @@ fi
 info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-%Y-%m-%dT%H-%M-%S.tar.gz}")"
 
-if [[ "${BACKUP_ONTHEFLY,,}" = "false" ]];
-
+if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
+then
 	# With Temporary File
 	_influxdbTimeBackup="$(date +%s.%N)"
 	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
@@ -85,20 +109,8 @@ if [[ "${BACKUP_ONTHEFLY,,}" = "false" ]];
 	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
 	fi	
 
-	if [ -S "$DOCKER_SOCK" ]; then
-	  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
-		name="$(docker ps --filter id=$id --format '{{.Names}}')"
-		cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
-		info "Post-exec command for: $name"
-		echo docker exec $id $cmd # echo the command we're using, for debuggability
-		eval docker exec $id $cmd
-	  done
-	fi
-
-	if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
-	  info "Starting containers back up"
-	  docker start $CONTAINERS_TO_STOP
-	fi
+	_execPostBackupCommand
+	_startContainer
 
 	info "Waiting before processing"
 	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
@@ -125,7 +137,6 @@ if [[ "${BACKUP_ONTHEFLY,,}" = "false" ]];
 
 	if [ ! -z "$SSH_HOST" ]; then
 	  info "Uploading backup by means of SCP"
-	  SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
 		ssh $SSH_CONFIG $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
@@ -160,23 +171,38 @@ if [[ "${BACKUP_ONTHEFLY,,}" = "false" ]];
 	  rm -vf "$BACKUP_FILENAME"
 	fi	
 	
-} else {
+else
+	info "Waiting before processing"
+	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
+	sleep "$BACKUP_WAIT_SECONDS"
 
 	# On-The-Fly
 	if [ ! -z "$SSH_HOST" ]; then
 		info "Uploading backup by means of SCP"
-		SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 		
 		_influxdbTimeBackup="$(date +%s.%N)"
 		_influxdbTimeUpload="$(date +%s.%N)"
-		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
-		tar -zcv $BACKUP_SOURCES | ssh [remote server IP address] "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		
+		echo -n "Test Connection... " && \
+			if ssh $SSH_CONFIG $SSH_USER@$SSH_HOST:$SSH_PORT "echo > /dev/nul" ; then echo "Successfull"; else echo "Failed" && exit 1; fi
+		
+		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
+		tar -zcv $BACKUP_SOURCES | ssh $SSH_CONFIG $SSH_USER@$SSH_HOST:$SSH_PORT "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
 		echo "Upload finished"
 		_influxdbBackupSize="$(du -bs $BACKUP_SOURCES)"
 		_influxdbTimeBackedUp="$(date +%s.%N)"
 		_influxdbTimeUploaded="$(date +%s.%N)"
 	fi
-}
+
+	_execPostBackupCommand
+	_startContainer
+	
+	if [ ! -z "$POST_BACKUP_COMMAND" ]; then
+	  info "Post-backup command"
+	  echo "$POST_BACKUP_COMMAND"
+	  eval $POST_BACKUP_COMMAND
+	fi
+fi
 
 
 info "Collecting metrics"
