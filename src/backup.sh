@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/bin/sh -e
 
 # Cronjobs don't inherit their env, so load from file
 source env.sh
@@ -9,31 +9,11 @@ function info {
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
-function _sshRemoteExec() {
-	ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $@
-}
-
-function _startStoppedContainer() {
-	if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
-	  info "Starting containers back up"
-	  docker start $CONTAINERS_TO_STOP
-	fi
-}
-
-function _execPostBackupCommand() {
-	if [ -S "$DOCKER_SOCK" ]; then
-	  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
-		name="$(docker ps --filter id=$id --format '{{.Names}}')"
-		cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
-		info "Post-exec command for: $name"
-		echo docker exec $id $cmd # echo the command we're using, for debuggability
-		eval docker exec $id $cmd
-	  done
-	fi
-}
-
 
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
+SSH="ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST"
+SCP="scp $SSH_CONFIG"
+
 
 # ---- 
 
@@ -97,9 +77,32 @@ fi
 
 info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-%Y-%m-%dT%H-%M-%S.tar.gz}")"
+if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
+	info "Uploading backup On-The by means of SSH"
+	
+	echo -n "Test Connection... " && \
+		if $SSH "echo > /dev/null" ; then echo "Successed"; else echo "Failed" && exit 1; fi
+	
+	if [ ! -z "$PRE_SSH_COMMAND" ]; then
+		echo "Pre-scp command: $PRE_SSH_COMMAND"
+		$SSH $PRE_SSH_COMMAND
+	fi		
 
-if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
-then
+	_influxdbTimeUpload="0"
+	_influxdbTimeUploaded="0"
+	
+	_influxdbTimeBackup="$(date +%s.%N)"		
+	echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
+	tar -zcv $BACKUP_SOURCES | $SSH "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+	echo "Upload finished"
+	_influxdbTimeBackedUp="$(date +%s.%N)"
+	_influxdbBackupSize="$($SSH "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"
+	
+	if [ ! -z "$POST_SSH_COMMAND" ]; then
+		echo "Post-scp command: $POST_SSH_COMMAND"
+		$SSH $POST_SSH_COMMAND
+	fi
+else 
 	# With Temporary File
 	_influxdbTimeBackup="$(date +%s.%N)"
 	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
@@ -111,17 +114,31 @@ then
 	  gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${BACKUP_FILENAME}.gpg" $BACKUP_FILENAME
 	  rm $BACKUP_FILENAME
 	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
-	fi	
+	fi
+fi
 
-	_execPostBackupCommand
-	_startStoppedContainer
+if [ -S "$DOCKER_SOCK" ]; then
+  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
+	name="$(docker ps --filter id=$id --format '{{.Names}}')"
+	cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
+	info "Post-exec command for: $name"
+	echo docker exec $id $cmd # echo the command we're using, for debuggability
+	eval docker exec $id $cmd
+  done
+fi
 
-	info "Waiting before processing"
-	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
-	sleep "$BACKUP_WAIT_SECONDS"
+if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
+  info "Starting containers back up"
+  docker start $CONTAINERS_TO_STOP
+fi
 
-	_influxdbTimeUpload="0"
-	_influxdbTimeUploaded="0"
+info "Waiting before processing"
+echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
+sleep "$BACKUP_WAIT_SECONDS"
+
+_influxdbTimeUpload="0"
+_influxdbTimeUploaded="0"
+if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
 	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
 	  info "Uploading backup to S3"
 	  echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
@@ -143,16 +160,16 @@ then
 	  info "Uploading backup by means of SCP"
 	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		_sshRemoteExec $PRE_SSH_COMMAND
+		$SSH $PRE_SSH_COMMAND
 	  fi
 	  echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
 	  _influxdbTimeUpload="$(date +%s.%N)"
-	  scp $SSH_CONFIG -P $SSH_PORT $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	  $SCP $SSH_CONFIG -P $SSH_PORT $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
 	  echo "Upload finished"
 	  _influxdbTimeUploaded="$(date +%s.%N)"
 	  if [ ! -z "$POST_SSH_COMMAND" ]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
-		_sshRemoteExec $POST_SSH_COMMAND
+		$SSH $POST_SSH_COMMAND
 	  fi
 	fi
 
@@ -163,61 +180,18 @@ then
 		chown -v $BACKUP_UID:$BACKUP_GID "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
 	  fi
 	fi
+fi
 	
-	if [ ! -z "$POST_BACKUP_COMMAND" ]; then
-	  info "Post-backup command"
-	  echo "$POST_BACKUP_COMMAND"
-	  eval $POST_BACKUP_COMMAND
-	fi
-
-	if [ -f "$BACKUP_FILENAME" ]; then
-	  info "Cleaning up"
-	  rm -vf "$BACKUP_FILENAME"
-	fi	
-	
-else
-	# On-The-Fly
-	info "Waiting before processing"
-	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
-	sleep "$BACKUP_WAIT_SECONDS"
-
-	if [ ! -z "$SSH_HOST" ]; then
-		info "Uploading backup On-The by means of SSH"
-		
-		echo -n "Test Connection... " && \
-			if _sshRemoteExec "echo > /dev/null" ; then echo "Successfull"; else echo "Failed" && exit 1; fi
-		
-		if [ ! -z "$PRE_SSH_COMMAND" ]; then
-			echo "Pre-scp command: $PRE_SSH_COMMAND"
-			_sshRemoteExec $PRE_SSH_COMMAND
-		fi		
-
-		_influxdbTimeUpload="0"
-		_influxdbTimeUploaded="0"
-		
-		_influxdbTimeBackup="$(date +%s.%N)"		
-		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		tar -zcv $BACKUP_SOURCES | _sshRemoteExec "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
-		echo "Upload finished"
-		_influxdbTimeBackedUp="$(date +%s.%N)"
-		_influxdbBackupSize="$(_sshRemoteExec "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"
-		
-		if [ ! -z "$POST_SSH_COMMAND" ]; then
-			echo "Post-scp command: $POST_SSH_COMMAND"
-			_sshRemoteExec $POST_SSH_COMMAND
-		fi
-	fi
-
-	_execPostBackupCommand
-	_startStoppedContainer
-	
-	if [ ! -z "$POST_BACKUP_COMMAND" ]; then
-	  info "Post-backup command"
-	  echo "$POST_BACKUP_COMMAND"
-	  eval $POST_BACKUP_COMMAND
-	fi
+if [ ! -z "$POST_BACKUP_COMMAND" ]; then
+  info "Post-backup command"
+  echo "$POST_BACKUP_COMMAND"
+  eval $POST_BACKUP_COMMAND
 fi
 
+if [ -f "$BACKUP_FILENAME" ]; then
+  info "Cleaning up"
+  rm -vf "$BACKUP_FILENAME"
+fi
 
 info "Collecting metrics"
 _influxdbTimeFinish="$(date +%s.%N)"
