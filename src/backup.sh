@@ -9,7 +9,7 @@ function info {
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
-function _startContainer() {
+function _startStoppedContainer() {
 	if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
 	  info "Starting containers back up"
 	  docker start $CONTAINERS_TO_STOP
@@ -110,7 +110,7 @@ then
 	fi	
 
 	_execPostBackupCommand
-	_startContainer
+	_startStoppedContainer
 
 	info "Waiting before processing"
 	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
@@ -139,16 +139,16 @@ then
 	  info "Uploading backup by means of SCP"
 	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		ssh $SSH_CONFIG $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
+		ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
 	  fi
 	  echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
 	  _influxdbTimeUpload="$(date +%s.%N)"
-	  scp $SSH_CONFIG $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	  scp $SSH_CONFIG -P $SSH_PORT $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
 	  echo "Upload finished"
 	  _influxdbTimeUploaded="$(date +%s.%N)"
 	  if [ ! -z "$POST_SSH_COMMAND" ]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
-		ssh $SSH_CONFIG $SSH_USER@$SSH_HOST $POST_SSH_COMMAND
+		ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $POST_SSH_COMMAND
 	  fi
 	fi
 
@@ -172,30 +172,40 @@ then
 	fi	
 	
 else
+	# On-The-Fly
 	info "Waiting before processing"
 	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
 	sleep "$BACKUP_WAIT_SECONDS"
 
-	# On-The-Fly
 	if [ ! -z "$SSH_HOST" ]; then
-		info "Uploading backup by means of SCP"
-		
-		_influxdbTimeBackup="$(date +%s.%N)"
-		_influxdbTimeUpload="$(date +%s.%N)"
+		info "Uploading backup On-The by means of SSH"
 		
 		echo -n "Test Connection... " && \
-			if ssh $SSH_CONFIG $SSH_USER@$SSH_HOST:$SSH_PORT "echo > /dev/nul" ; then echo "Successfull"; else echo "Failed" && exit 1; fi
+			if ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST:$SSH_PORT "echo > /dev/null" ; then echo "Successfull"; else echo "Failed" && exit 1; fi
 		
+		if [ ! -z "$PRE_SSH_COMMAND" ]; then
+			echo "Pre-scp command: $PRE_SSH_COMMAND"
+			ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
+		fi		
+
+		_influxdbTimeUpload="0"
+		_influxdbTimeUploaded="0"
+		
+		_influxdbTimeBackup="$(date +%s.%N)"		
 		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		tar -zcv $BACKUP_SOURCES | ssh $SSH_CONFIG $SSH_USER@$SSH_HOST:$SSH_PORT "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		tar -zcv $BACKUP_SOURCES | ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
 		echo "Upload finished"
-		_influxdbBackupSize="$(du -bs $BACKUP_SOURCES)"
 		_influxdbTimeBackedUp="$(date +%s.%N)"
-		_influxdbTimeUploaded="$(date +%s.%N)"
+		_influxdbBackupSize="$(ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"
+		
+		if [ ! -z "$POST_SSH_COMMAND" ]; then
+			echo "Post-scp command: $POST_SSH_COMMAND"
+			ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST $POST_SSH_COMMAND
+		fi
 	fi
 
 	_execPostBackupCommand
-	_startContainer
+	_startStoppedContainer
 	
 	if [ ! -z "$POST_BACKUP_COMMAND" ]; then
 	  info "Post-backup command"
