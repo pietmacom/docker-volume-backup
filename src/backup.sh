@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # Cronjobs don't inherit their env, so load from file
 source env.sh
@@ -24,7 +24,7 @@ if [ "$CHECK_HOST" != "false" ]; then
 fi
 
 info "Backup starting"
-TIME_START="$(date +%s.%N)"
+_influxdbTimeStart="$(date +%s.%N)"
 DOCKER_SOCK="/var/run/docker.sock"
 
 if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
@@ -69,108 +69,130 @@ fi
 
 info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-%Y-%m-%dT%H-%M-%S.tar.gz}")"
-TIME_BACK_UP="$(date +%s.%N)"
-tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
-BACKUP_SIZE="$(du --bytes $BACKUP_FILENAME | sed 's/\s.*$//')"
-TIME_BACKED_UP="$(date +%s.%N)"
 
-if [ ! -z "$GPG_PASSPHRASE" ]; then
-  info "Encrypting backup"
-  gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${BACKUP_FILENAME}.gpg" $BACKUP_FILENAME
-  rm $BACKUP_FILENAME
-  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
-fi
+if [[ "${BACKUP_ONTHEFLY,,}" = "false" ]];
 
-if [ -S "$DOCKER_SOCK" ]; then
-  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
-    name="$(docker ps --filter id=$id --format '{{.Names}}')"
-    cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
-    info "Post-exec command for: $name"
-    echo docker exec $id $cmd # echo the command we're using, for debuggability
-    eval docker exec $id $cmd
-  done
-fi
+	# With Temporary File
+	_influxdbTimeBackup="$(date +%s.%N)"
+	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
+	_influxdbBackupSize="$(du --bytes $BACKUP_FILENAME | sed 's/\s.*$//')"
+	_influxdbTimeBackedUp="$(date +%s.%N)"
+	
+	if [ ! -z "$GPG_PASSPHRASE" ]; then
+	  info "Encrypting backup"
+	  gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${BACKUP_FILENAME}.gpg" $BACKUP_FILENAME
+	  rm $BACKUP_FILENAME
+	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
+	fi	
 
-if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
-  info "Starting containers back up"
-  docker start $CONTAINERS_TO_STOP
-fi
+	if [ -S "$DOCKER_SOCK" ]; then
+	  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
+		name="$(docker ps --filter id=$id --format '{{.Names}}')"
+		cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
+		info "Post-exec command for: $name"
+		echo docker exec $id $cmd # echo the command we're using, for debuggability
+		eval docker exec $id $cmd
+	  done
+	fi
 
-info "Waiting before processing"
-echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
-sleep "$BACKUP_WAIT_SECONDS"
+	if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
+	  info "Starting containers back up"
+	  docker start $CONTAINERS_TO_STOP
+	fi
 
-TIME_UPLOAD="0"
-TIME_UPLOADED="0"
-if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
-  info "Uploading backup to S3"
-  echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
-  TIME_UPLOAD="$(date +%s.%N)"
-  aws $AWS_EXTRA_ARGS s3 cp --only-show-errors "$BACKUP_FILENAME" "s3://$AWS_S3_BUCKET_NAME/"
-  echo "Upload finished"
-  TIME_UPLOADED="$(date +%s.%N)"
-fi
-if [ ! -z "$AWS_GLACIER_VAULT_NAME" ]; then
-  info "Uploading backup to GLACIER"
-  echo "Will upload to vault \"$AWS_GLACIER_VAULT_NAME\""
-  TIME_UPLOAD="$(date +%s.%N)"
-  aws $AWS_EXTRA_ARGS glacier upload-archive --account-id - --vault-name "$AWS_GLACIER_VAULT_NAME" --body "$BACKUP_FILENAME"
-  echo "Upload finished"
-  TIME_UPLOADED="$(date +%s.%N)"
-fi
+	info "Waiting before processing"
+	echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
+	sleep "$BACKUP_WAIT_SECONDS"
 
-if [ ! -z "$SCP_HOST" ]; then
-  info "Uploading backup by means of SCP"
-  SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
-  if [ ! -z "$PRE_SCP_COMMAND" ]; then
-    echo "Pre-scp command: $PRE_SCP_COMMAND"
-    ssh $SSH_CONFIG $SCP_USER@$SCP_HOST $PRE_SCP_COMMAND
-  fi
-  echo "Will upload to $SCP_HOST:$SCP_DIRECTORY"
-  TIME_UPLOAD="$(date +%s.%N)"
-  scp $SSH_CONFIG $BACKUP_FILENAME $SCP_USER@$SCP_HOST:$SCP_DIRECTORY
-  echo "Upload finished"
-  TIME_UPLOADED="$(date +%s.%N)"
-  if [ ! -z "$POST_SCP_COMMAND" ]; then
-    echo "Post-scp command: $POST_SCP_COMMAND"
-    ssh $SSH_CONFIG $SCP_USER@$SCP_HOST $POST_SCP_COMMAND
-  fi
-fi
+	_influxdbTimeUpload="0"
+	_influxdbTimeUploaded="0"
+	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
+	  info "Uploading backup to S3"
+	  echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
+	  _influxdbTimeUpload="$(date +%s.%N)"
+	  aws $AWS_EXTRA_ARGS s3 cp --only-show-errors "$BACKUP_FILENAME" "s3://$AWS_S3_BUCKET_NAME/"
+	  echo "Upload finished"
+	  _influxdbTimeUploaded="$(date +%s.%N)"
+	fi
+	if [ ! -z "$AWS_GLACIER_VAULT_NAME" ]; then
+	  info "Uploading backup to GLACIER"
+	  echo "Will upload to vault \"$AWS_GLACIER_VAULT_NAME\""
+	  _influxdbTimeUpload="$(date +%s.%N)"
+	  aws $AWS_EXTRA_ARGS glacier upload-archive --account-id - --vault-name "$AWS_GLACIER_VAULT_NAME" --body "$BACKUP_FILENAME"
+	  echo "Upload finished"
+	  _influxdbTimeUploaded="$(date +%s.%N)"
+	fi
 
-if [ -d "$BACKUP_ARCHIVE" ]; then
-  info "Archiving backup"
-  mv -v "$BACKUP_FILENAME" "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
-  if (($BACKUP_UID > 0)); then
-    chown -v $BACKUP_UID:$BACKUP_GID "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
-  fi
-fi
+	if [ ! -z "$SSH_HOST" ]; then
+	  info "Uploading backup by means of SCP"
+	  SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
+	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
+		echo "Pre-scp command: $PRE_SSH_COMMAND"
+		ssh $SSH_CONFIG $SSH_USER@$SSH_HOST $PRE_SSH_COMMAND
+	  fi
+	  echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
+	  _influxdbTimeUpload="$(date +%s.%N)"
+	  scp $SSH_CONFIG $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	  echo "Upload finished"
+	  _influxdbTimeUploaded="$(date +%s.%N)"
+	  if [ ! -z "$POST_SSH_COMMAND" ]; then
+		echo "Post-scp command: $POST_SSH_COMMAND"
+		ssh $SSH_CONFIG $SSH_USER@$SSH_HOST $POST_SSH_COMMAND
+	  fi
+	fi
 
-if [ ! -z "$POST_BACKUP_COMMAND" ]; then
-  info "Post-backup command"
-  echo "$POST_BACKUP_COMMAND"
-  eval $POST_BACKUP_COMMAND
-fi
+	if [ -d "$BACKUP_ARCHIVE" ]; then
+	  info "Archiving backup"
+	  mv -v "$BACKUP_FILENAME" "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
+	  if (($BACKUP_UID > 0)); then
+		chown -v $BACKUP_UID:$BACKUP_GID "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
+	  fi
+	fi
+	
+	if [ ! -z "$POST_BACKUP_COMMAND" ]; then
+	  info "Post-backup command"
+	  echo "$POST_BACKUP_COMMAND"
+	  eval $POST_BACKUP_COMMAND
+	fi
 
+	if [ -f "$BACKUP_FILENAME" ]; then
+	  info "Cleaning up"
+	  rm -vf "$BACKUP_FILENAME"
+	fi	
+	
+} else {
 
-if [ -f "$BACKUP_FILENAME" ]; then
-  info "Cleaning up"
-  rm -vf "$BACKUP_FILENAME"
-fi
+	# On-The-Fly
+	if [ ! -z "$SSH_HOST" ]; then
+		info "Uploading backup by means of SCP"
+		SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
+		
+		_influxdbTimeBackup="$(date +%s.%N)"
+		_influxdbTimeUpload="$(date +%s.%N)"
+		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
+		tar -zcv $BACKUP_SOURCES | ssh [remote server IP address] "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		echo "Upload finished"
+		_influxdbBackupSize="$(du -bs $BACKUP_SOURCES)"
+		_influxdbTimeBackedUp="$(date +%s.%N)"
+		_influxdbTimeUploaded="$(date +%s.%N)"
+	fi
+}
+
 
 info "Collecting metrics"
-TIME_FINISH="$(date +%s.%N)"
-INFLUX_LINE="$INFLUXDB_MEASUREMENT\
+_influxdbTimeFinish="$(date +%s.%N)"
+_influxdbLine="$_influxdbMeasurement\
 ,host=$BACKUP_HOSTNAME\
 \
- size_compressed_bytes=$BACKUP_SIZE\
+ size_compressed_bytes=$_influxdbBackupSize\
 ,containers_total=$CONTAINERS_TOTAL\
 ,containers_stopped=$CONTAINERS_TO_STOP_TOTAL\
-,time_wall=$(perl -E "say $TIME_FINISH - $TIME_START")\
-,time_total=$(perl -E "say $TIME_FINISH - $TIME_START - $BACKUP_WAIT_SECONDS")\
-,time_compress=$(perl -E "say $TIME_BACKED_UP - $TIME_BACK_UP")\
-,time_upload=$(perl -E "say $TIME_UPLOADED - $TIME_UPLOAD")\
+,time_wall=$(perl -E "say $_influxdbTimeFinish - $_influxdbTimeStart")\
+,time_total=$(perl -E "say $_influxdbTimeFinish - $_influxdbTimeStart - $BACKUP_WAIT_SECONDS")\
+,time_compress=$(perl -E "say $_influxdbTimeBackedUp - $_influxdbTimeBackup")\
+,time_upload=$(perl -E "say $_influxdbTimeUploaded - $_influxdbTimeUpload")\
 "
-echo "$INFLUX_LINE" | sed 's/ /,/g' | tr , '\n'
+echo "$_influxdbLine" | sed 's/ /,/g' | tr , '\n'
 
 if [ ! -z "$INFLUXDB_URL" ]; then
   info "Shipping metrics"
@@ -180,7 +202,7 @@ if [ ! -z "$INFLUXDB_URL" ]; then
     --request POST \
     --user "$INFLUXDB_CREDENTIALS" \
     "$INFLUXDB_URL/write?db=$INFLUXDB_DB" \
-    --data-binary "$INFLUX_LINE"
+    --data-binary "$_influxdbLine"
 fi
 
 info "Backup finished"
