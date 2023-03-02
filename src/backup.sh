@@ -81,8 +81,9 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	info "Uploading backup On-The by means of SSH"
 	
 	echo -n "Test Connection... " && \
-		if $SSH "echo > /dev/null" ; then echo "Successed"; else echo "Failed" && exit 1; fi
-	
+		if $SSH "echo > /dev/null" > /dev/null ; then echo "Successed"; else echo "Failed" && exit 1; fi
+	sleep 1
+
 	if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
 		$SSH $PRE_SSH_COMMAND
@@ -139,6 +140,7 @@ sleep "$BACKUP_WAIT_SECONDS"
 _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
 if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
+then
 	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
 	  info "Uploading backup to S3"
 	  echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
