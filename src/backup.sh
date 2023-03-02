@@ -77,6 +77,9 @@ fi
 
 info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-%Y-%m-%dT%H-%M-%S.tar.gz}")"
+###
+# On-The-Fly
+#
 if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	info "Uploading backup On-The by means of SSH"
 	
@@ -88,9 +91,6 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
 		$SSH $PRE_SSH_COMMAND
 	fi		
-
-	_influxdbTimeUpload="0"
-	_influxdbTimeUploaded="0"
 	
 	_influxdbTimeBackup="$(date +%s.%N)"		
 	echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
@@ -103,8 +103,11 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
 		$SSH $POST_SSH_COMMAND
 	fi
-else 
-	# With Temporary File
+
+###
+# Temporary File
+#
+else 	
 	_influxdbTimeBackup="$(date +%s.%N)"
 	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
 	_influxdbBackupSize="$(du --bytes $BACKUP_FILENAME | sed 's/\s.*$//')"
@@ -116,6 +119,7 @@ else
 	  rm $BACKUP_FILENAME
 	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
 	fi
+	
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
