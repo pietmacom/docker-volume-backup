@@ -9,10 +9,61 @@ function info {
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
+# Parameters:
+#	List Of Labels
+#
+# Returns
+#	List Of ContainerIds
+#
+# Examples
+# 	_containerLabelContain docker-volume-backup.stop-during-backup
+# 	_containerLabelContain docker-volume-backup.stop-during-backup=true docker-volume-backup.newLabel
+#
+function _containerLabelContain() {
+	local _labelFilter=""
+	for label in "$@"
+	do
+		if [[ -z "${label}" ]]; then continue: fi
+		_labelFilter="${_labels} --filter "label=${label}""
+	done	
+	docker ps --format "{{.ID}}"
+}
+
+# Parameters: 
+#	container-id 
+#	label
+#
+# Returns:
+#	Value Assigned To Label
+#
+# Examples
+#	_containerLabelGetValue 960a26447d46 docker-volume-backup.stop-during-backup
+#
+function _containerLabelValue() {
+	local _id="$1"
+	local _labelName="$2"
+	docker ps --filter id=${_id} --format '{{.Label "${_labelName}"}}' | head -n 1
+}
+
+function _containerName() {
+	local _id="$1"
+	docker ps --filter id=${_id} --format '{{.Names}}'
+}
+
+function _containerStart(){
+	local _ids="$1"
+	if [[ ! -z "${_ids}"}  ]];
+	then
+		info "Starting containers"
+		docker start ${_ids}
+	fi
+}
+
 
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST"
 SCP="scp $SSH_CONFIG"
+RSYNC=""
 
 
 # ---- 
@@ -40,29 +91,27 @@ if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
-  TEMPFILE="$(mktemp)"
-  docker ps --format "{{.ID}}" --filter "label=docker-volume-backup.stop-during-backup=true" $CUSTOM_LABEL > "$TEMPFILE"
-  CONTAINERS_TO_STOP="$(cat $TEMPFILE | tr '\n' ' ')"
-  CONTAINERS_TO_STOP_TOTAL="$(cat $TEMPFILE | wc -l)"
-  CONTAINERS_TOTAL="$(docker ps --format "{{.ID}}" | wc -l)"
-  rm "$TEMPFILE"
-  echo "$CONTAINERS_TOTAL containers running on host in total"
-  echo "$CONTAINERS_TO_STOP_TOTAL containers marked to be stopped during backup"
+	_containersToStop="$(_containerLabelContain "docker-volume-backup.stop-during-backup=true" "${CUSTOM_LABEL}")"
+	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
+	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
+
+	echo "$_containersCount containers running on host in total"
+	echo "$_containersToStopCount containers marked to be stopped during backup"
 else
-  CONTAINERS_TO_STOP_TOTAL="0"
-  CONTAINERS_TOTAL="0"
+  _containersToStop="0"
+  _containersCount="0"
   echo "Cannot access \"$DOCKER_SOCK\", won't look for containers to stop"
 fi
 
-if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
+if [ "$_containersToStopCount" != "0" ]; then
   info "Stopping containers"
-  docker stop $CONTAINERS_TO_STOP
+  docker stop $_containersToStopCount
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
-  for id in $(docker ps --filter label=docker-volume-backup.exec-pre-backup $CUSTOM_LABEL --format '{{.ID}}'); do
-    name="$(docker ps --filter id=$id --format '{{.Names}}')"
-    cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-pre-backup"}}')"
+  for id in $(_containerLabelContain "docker-volume-backup.exec-pre-backup" "${CUSTOM_LABEL}"); do
+    name="$(_containerName "$id")"
+    cmd="$(_containerLabelValue "${id}" "docker-volume-backup.exec-pre-backup")"
     info "Pre-exec command for: $name"
     echo docker exec $id $cmd # echo the command we're using, for debuggability
     eval docker exec $id $cmd
@@ -76,15 +125,16 @@ if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
 fi
 
 info "Creating backup"
-BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-%Y-%m-%dT%H-%M-%S.tar.gz}")"
+BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S.tar.gz}")"
 ###
-# On-The-Fly
+# On-The-Fly: SSH
 #
 if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
-	info "Uploading backup On-The by means of SSH"
+	info "Uploading backup On-The-Fly by means of SSH"
 	
+	# Test connection before 
 	echo -n "Test Connection... " && \
-		if $SSH "echo > /dev/null" > /dev/null ; then echo "Successed"; else echo "Failed" && exit 1; fi
+		if $SSH "echo > /dev/null" 1>/dev/null 2>/dev/null ; then echo "Successed"; else echo "Failed" && _containerStart "${_containersToStop}"  && exit 1; fi
 	sleep 1
 
 	if [ ! -z "$PRE_SSH_COMMAND" ]; then
@@ -123,19 +173,17 @@ else
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
-  for id in $(docker ps --filter label=docker-volume-backup.exec-post-backup $CUSTOM_LABEL --format '{{.ID}}'); do
-	name="$(docker ps --filter id=$id --format '{{.Names}}')"
-	cmd="$(docker ps --filter id=$id --format '{{.Label "docker-volume-backup.exec-post-backup"}}')"
+  for id in $(_containerLabelContain "docker-volume-backup.exec-post-backup" "${CUSTOM_LABEL}"); do
+	name="$(_containerName "$id")"
+	cmd="$(_containerLabelValue "${id}" "docker-volume-backup.exec-post-backup")"
 	info "Post-exec command for: $name"
 	echo docker exec $id $cmd # echo the command we're using, for debuggability
 	eval docker exec $id $cmd
   done
 fi
 
-if [ "$CONTAINERS_TO_STOP_TOTAL" != "0" ]; then
-  info "Starting containers back up"
-  docker start $CONTAINERS_TO_STOP
-fi
+_containerStart "${_containersToStop}"
+
 
 info "Waiting before processing"
 echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
@@ -143,7 +191,7 @@ sleep "$BACKUP_WAIT_SECONDS"
 
 _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
-if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
+if [ -f "$BACKUP_FILENAME" ]; then
 then
 	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
 	  info "Uploading backup to S3"
@@ -205,8 +253,8 @@ _influxdbLine="$_influxdbMeasurement\
 ,host=$BACKUP_HOSTNAME\
 \
  size_compressed_bytes=$_influxdbBackupSize\
-,containers_total=$CONTAINERS_TOTAL\
-,containers_stopped=$CONTAINERS_TO_STOP_TOTAL\
+,containers_total=$_containersCount\
+,containers_stopped=$_containersToStopCount\
 ,time_wall=$(perl -E "say $_influxdbTimeFinish - $_influxdbTimeStart")\
 ,time_total=$(perl -E "say $_influxdbTimeFinish - $_influxdbTimeStart - $BACKUP_WAIT_SECONDS")\
 ,time_compress=$(perl -E "say $_influxdbTimeBackedUp - $_influxdbTimeBackup")\
