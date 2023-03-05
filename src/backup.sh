@@ -149,24 +149,23 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
 	then
 		echo "Will Synchronize To $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		_sshRemotePathNackupIncremental="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.incremental"
+		_sshRemotePathNackupIncremental="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-incremental"
 		$SSH "mkdir -p ${_sshRemotePathNackupIncremental}"		
         for i in {1..3};
         do
+			rsync -avi -e '${SSH}' --stats --delete --port $SSH_PORT ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_sshRemotePathNackupIncremental}
+			if [ $? -eq 0 ]; then
+					break;
+			fi
 
-                rsync -avi --stats --delete ${BACKUP_SOURCES}/ ${remotehost}:${_sshRemotePathNackupIncremental}
-                if [ $? -eq 0 ]; then
-                        break;
-                fi
+			if [ $i -ge 3 ];
+			then
+				echo "Backup failed after ${i} times"
+				exit 1
+			fi
 
-                if [ $i -ge 3 ];
-                then
-                    echo "Backup failed after ${i} times"
-                    exit 1
-                fi
-
-                echo "Repeat ${i} time due to an error"
-                sleep 30
+			echo "Repeat ${i} time due to an error"
+			sleep 30
         done
 		
 	else
