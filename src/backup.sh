@@ -51,11 +51,19 @@ function _docker(){
 	fi
 }
 
+function _backupNumber() {
+	local _fullEvery="$1"
+	year=$(date "+%Y")
+	dayofyear=$(date "+%j")
+	fullindays=$(expr ${dayofyear} % ${_fullEvery})
+	backupnumber=$(expr \( ${dayofyear} - ${fullindays} \) / ${fullEvery})
+	echo ${year}$(printf "%02d" "${backupnumber}")
+}
+
 
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
-
 SCP="scp ${SSH_CONFIG} -P ${SSH_PORT}"
 
 # ---- 
@@ -115,8 +123,8 @@ fi
 
 info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S}")"
-_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-incremental"
 _backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.tar.gz"
+_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber)"
 
 ###
 # On-The-Fly: SSH
