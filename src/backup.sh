@@ -67,7 +67,7 @@ function _docker(){
 
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
-SSH_REMOTE="${SSH} ${SSH_USER}@{$SSH_HOST}"
+SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
 SCP="scp ${SSH_CONFIG} -P ${SSH_PORT}"
 RSYNC="rsync -aviP -e "${SSH}" --stats --delete --port ${SSH_PORT}"
