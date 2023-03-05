@@ -70,7 +70,6 @@ SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
 SCP="scp ${SSH_CONFIG} -P ${SSH_PORT}"
-RSYNC="rsync -aviP -e "${SSH}" --stats --delete --port ${SSH_PORT}"
 
 # ---- 
 
@@ -128,7 +127,10 @@ if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
 fi
 
 info "Creating backup"
-BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S.tar.gz}")"
+BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S}")"
+_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-incremental"
+_backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.tar.gz"
+
 ###
 # On-The-Fly: SSH
 #
@@ -137,8 +139,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	
 	# Test connection before 
 	echo -n "Test Connection... " && \
-		if ${SSH_REMOTE} "echo > /dev/null" 1>/dev/null 2>/dev/null ; then echo "Successed"; else echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
-	sleep 1
+		 if ! ${SSH_REMOTE} "echo 'Successed'; sleep 1" 2>/dev/null ; then echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
 
 	if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
@@ -149,11 +150,10 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
 	then
 		echo "Will Synchronize To $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		_sshRemotePathBackupIncremental="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-incremental"
-		${SSH_REMOTE} "mkdir -p ${_sshRemotePathBackupIncremental}"		
+		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
         for i in {1..3};
         do
-			${RSYNC} ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_sshRemotePathBackupIncremental}
+			rsync -aviP -e "${SSH}" --stats --delete ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_backupPathIncrementalRemote}
 			if [ $? -eq 0 ]; then
 					break;
 			fi
@@ -170,12 +170,12 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 		
 	else
 		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}"
 		
 	fi
 	echo "Upload finished"
 	_influxdbTimeBackedUp="$(date +%s.%N)"
-	_influxdbBackupSize="$($SSH "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"		
+	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote}")"		
 
 	
 	if [ ! -z "$POST_SSH_COMMAND" ]; then
