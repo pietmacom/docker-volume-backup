@@ -3,17 +3,17 @@
 # Cronjobs don't inherit their env, so load from file
 source env.sh
 
-function info {
+function _info {
   bold="\033[1m"
   reset="\033[0m"
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
 # Examples
-# 	_containerLabelContain docker-volume-backup.stop-during-backup
-# 	_containerLabelContain docker-volume-backup.stop-during-backup=true docker-volume-backup.newLabel
+# 	_dockerContainerLabelContains docker-volume-backup.stop-during-backup
+# 	_dockerContainerLabelContains docker-volume-backup.stop-during-backup=true docker-volume-backup.newLabel
 #
-function _containerLabelContain() {
+function _dockerContainerLabelContains() {
 	local _labelFilters=""
 	for label in "$@"
 	do
@@ -29,14 +29,14 @@ function _containerLabelContain() {
 # Examples
 #	_containerLabelGetValue 960a26447d46 docker-volume-backup.stop-during-backup
 #
-function _containerLabelValue() {
+function _dockerContainerLabelValue() {
 	local _id="$1"
 	local _labelName="$2"
 	
 	docker ps --filter id=${_id} --format '{{.Label "${_labelName}"}}' | head -n 1
 }
 
-function _containerName() {
+function _dockerContainerName() {
 	local _id="$1"
 	
 	docker ps --filter id=${_id} --format '{{.Names}}'
@@ -48,7 +48,7 @@ function _docker(){
 	
 	if [[ ! -z "${_ids}"}  ]];
 	then
-		info "${_action} containers"
+		_info "${_action} containers"
 		docker ${_action} "${_ids}"
 	fi
 }
@@ -73,7 +73,7 @@ SCP="scp ${SSH_CONFIG} -P ${SSH_PORT}"
 # ---- 
 
 if [ "$CHECK_HOST" != "false" ]; then
-  info "Check host availability"
+  _info "Check host availability"
   TEMPFILE="$(mktemp)"
   ping -c 1 $CHECK_HOST | grep '1 packets transmitted, 1 received' > "$TEMPFILE"
   PING_RESULT="$(cat $TEMPFILE)"
@@ -81,12 +81,12 @@ if [ "$CHECK_HOST" != "false" ]; then
     echo "$CHECK_HOST is available."
   else
     echo "$CHECK_HOST is not available."
-    info "Backup skipped"
+    _info "Backup skipped"
     exit 0
   fi
 fi
 
-info "Backup starting"
+_info "Backup starting"
 _influxdbTimeStart="$(date +%s.%N)"
 DOCKER_SOCK="/var/run/docker.sock"
 
@@ -95,7 +95,7 @@ if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
-	_containersToStop="$(_containerLabelContain "docker-volume-backup.stop-during-backup=true" "${CUSTOM_LABEL}")"
+	_containersToStop="$(_dockerContainerLabelContains "docker-volume-backup.stop-during-backup=true" "${CUSTOM_LABEL}")"
 	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
 
@@ -110,22 +110,22 @@ fi
 _docker stop ${_containersToStop}
 
 if [ -S "$DOCKER_SOCK" ]; then
-  for id in $(_containerLabelContain "docker-volume-backup.exec-pre-backup" "${CUSTOM_LABEL}"); do
-    name="$(_containerName "$id")"
-    cmd="$(_containerLabelValue "${id}" "docker-volume-backup.exec-pre-backup")"
-    info "Pre-exec command for: $name"
+  for id in $(_dockerContainerLabelContains "docker-volume-backup.exec-pre-backup" "${CUSTOM_LABEL}"); do
+    name="$(_dockerContainerName "$id")"
+    cmd="$(_dockerContainerLabelValue "${id}" "docker-volume-backup.exec-pre-backup")"
+    _info "Pre-exec command for: $name"
     echo docker exec $id $cmd # echo the command we're using, for debuggability
     eval docker exec $id $cmd
   done
 fi
 
 if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
-  info "Pre-backup command"
+  _info "Pre-backup command"
   echo "$PRE_BACKUP_COMMAND"
   eval $PRE_BACKUP_COMMAND
 fi
 
-info "Creating backup"
+_info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S}")"
 _backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.tar.gz"
 _backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
@@ -134,7 +134,7 @@ _backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber ${BACKUP
 # On-The-Fly: SSH
 #
 if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
-	info "Uploading backup On-The-Fly by means of SSH"
+	_info "Uploading backup On-The-Fly by means of SSH"
 	
 	# Test connection before 
 	echo -n "Test Connection... " && \
@@ -194,7 +194,7 @@ else
 	_influxdbTimeBackedUp="$(date +%s.%N)"
 	
 	if [ ! -z "$GPG_PASSPHRASE" ]; then
-	  info "Encrypting backup"
+	  _info "Encrypting backup"
 	  gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${BACKUP_FILENAME}.gpg" $BACKUP_FILENAME
 	  rm $BACKUP_FILENAME
 	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
@@ -203,10 +203,10 @@ else
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
-  for id in $(_containerLabelContain "docker-volume-backup.exec-post-backup" "${CUSTOM_LABEL}"); do
-	name="$(_containerName "$id")"
-	cmd="$(_containerLabelValue "${id}" "docker-volume-backup.exec-post-backup")"
-	info "Post-exec command for: $name"
+  for id in $(_dockerContainerLabelContains "docker-volume-backup.exec-post-backup" "${CUSTOM_LABEL}"); do
+	name="$(_dockerContainerName "$id")"
+	cmd="$(_dockerContainerLabelValue "${id}" "docker-volume-backup.exec-post-backup")"
+	_info "Post-exec command for: $name"
 	echo docker exec $id $cmd # echo the command we're using, for debuggability
 	eval docker exec $id $cmd
   done
@@ -215,7 +215,7 @@ fi
 _docker start ${_containersToStop}
 
 
-info "Waiting before processing"
+_info "Waiting before processing"
 echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
 sleep "$BACKUP_WAIT_SECONDS"
 
@@ -224,7 +224,7 @@ _influxdbTimeUploaded="0"
 if [ -f "$BACKUP_FILENAME" ];
 then
 	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
-	  info "Uploading backup to S3"
+	  _info "Uploading backup to S3"
 	  echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
 	  _influxdbTimeUpload="$(date +%s.%N)"
 	  aws $AWS_EXTRA_ARGS s3 cp --only-show-errors "$BACKUP_FILENAME" "s3://$AWS_S3_BUCKET_NAME/"
@@ -232,7 +232,7 @@ then
 	  _influxdbTimeUploaded="$(date +%s.%N)"
 	fi
 	if [ ! -z "$AWS_GLACIER_VAULT_NAME" ]; then
-	  info "Uploading backup to GLACIER"
+	  _info "Uploading backup to GLACIER"
 	  echo "Will upload to vault \"$AWS_GLACIER_VAULT_NAME\""
 	  _influxdbTimeUpload="$(date +%s.%N)"
 	  aws $AWS_EXTRA_ARGS glacier upload-archive --account-id - --vault-name "$AWS_GLACIER_VAULT_NAME" --body "$BACKUP_FILENAME"
@@ -241,7 +241,7 @@ then
 	fi
 
 	if [ ! -z "$SSH_HOST" ]; then
-	  info "Uploading backup by means of SCP"
+	  _info "Uploading backup by means of SCP"
 	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
 		${SSH_REMOTE} $PRE_SSH_COMMAND
@@ -258,7 +258,7 @@ then
 	fi
 
 	if [ -d "$BACKUP_ARCHIVE" ]; then
-	  info "Archiving backup"
+	  _info "Archiving backup"
 	  mv -v "$BACKUP_FILENAME" "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
 	  if (($BACKUP_UID > 0)); then
 		chown -v $BACKUP_UID:$BACKUP_GID "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
@@ -267,17 +267,17 @@ then
 fi
 	
 if [ ! -z "$POST_BACKUP_COMMAND" ]; then
-  info "Post-backup command"
+  _info "Post-backup command"
   echo "$POST_BACKUP_COMMAND"
   eval $POST_BACKUP_COMMAND
 fi
 
 if [ -f "$BACKUP_FILENAME" ]; then
-  info "Cleaning up"
+  _info "Cleaning up"
   rm -vf "$BACKUP_FILENAME"
 fi
 
-info "Collecting metrics"
+_info "Collecting metrics"
 _influxdbTimeFinish="$(date +%s.%N)"
 _influxdbLine="$_influxdbMeasurement\
 ,host=$BACKUP_HOSTNAME\
@@ -293,7 +293,7 @@ _influxdbLine="$_influxdbMeasurement\
 echo "$_influxdbLine" | sed 's/ /,/g' | tr , '\n'
 
 if [ ! -z "$INFLUXDB_URL" ]; then
-  info "Shipping metrics"
+  _info "Shipping metrics"
   curl \
     --silent \
     --include \
@@ -303,5 +303,5 @@ if [ ! -z "$INFLUXDB_URL" ]; then
     --data-binary "$_influxdbLine"
 fi
 
-info "Backup finished"
+_info "Backup finished"
 echo "Will wait for next scheduled backup"
