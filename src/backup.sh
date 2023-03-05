@@ -53,14 +53,17 @@ function _containerName() {
 	docker ps --filter id=${_id} --format '{{.Names}}'
 }
 
-function _containerStart(){
-	local _ids="$1"
+function _docker(){
+	local _action="$1"
+	local _ids="$2"
+	
 	if [[ ! -z "${_ids}"}  ]];
 	then
-		info "Starting containers"
-		docker start ${_ids}
+		info "${_action} containers"
+		docker ${_action} "${_ids}"
 	fi
 }
+
 
 
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
@@ -106,10 +109,7 @@ else
   echo "Cannot access \"$DOCKER_SOCK\", won't look for containers to stop"
 fi
 
-if [ "$_containersToStopCount" != "0" ]; then
-  info "Stopping containers"
-  docker stop "${_containersToStop}"
-fi
+_docker stop ${_containersToStop}
 
 if [ -S "$DOCKER_SOCK" ]; then
   for id in $(_containerLabelContain "docker-volume-backup.exec-pre-backup" "${CUSTOM_LABEL}"); do
@@ -137,7 +137,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	
 	# Test connection before 
 	echo -n "Test Connection... " && \
-		if $SSH "echo > /dev/null" 1>/dev/null 2>/dev/null ; then echo "Successed"; else echo "Failed" && _containerStart "${_containersToStop}"  && exit 1; fi
+		if $SSH "echo > /dev/null" 1>/dev/null 2>/dev/null ; then echo "Successed"; else echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
 	sleep 1
 
 	if [ ! -z "$PRE_SSH_COMMAND" ]; then
@@ -212,7 +212,7 @@ if [ -S "$DOCKER_SOCK" ]; then
   done
 fi
 
-_containerStart "${_containersToStop}"
+_docker start ${_containersToStop}
 
 
 info "Waiting before processing"
