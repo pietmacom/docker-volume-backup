@@ -20,13 +20,16 @@ function info {
 # 	_containerLabelContain docker-volume-backup.stop-during-backup=true docker-volume-backup.newLabel
 #
 function _containerLabelContain() {
-	local _labelFilter=""
+	local _labelFilters=""
 	for label in "$@"
 	do
-		if [[ -z "${label}" ]]; then continue: fi
-		_labelFilter="${_labels} --filter "label=${label}""
-	done	
-	docker ps --format "{{.ID}}"
+		if [[ -z "${label}" ]]; then continue; fi
+		_labelFilters="${_labelFilters} --filter "label=${label}""
+	done
+	if [[ ! -z "${_labelFilters}" ]];
+	then
+		docker ps --format "{{.ID}}" ${_labelFilters}
+	fi
 }
 
 # Parameters: 
@@ -87,12 +90,12 @@ _influxdbTimeStart="$(date +%s.%N)"
 DOCKER_SOCK="/var/run/docker.sock"
 
 if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
-  CUSTOM_LABEL="--filter label=$BACKUP_CUSTOM_LABEL"
+  CUSTOM_LABEL="$BACKUP_CUSTOM_LABEL"
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_containerLabelContain "docker-volume-backup.stop-during-backup=true" "${CUSTOM_LABEL}")"
-	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
+	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
 
 	echo "$_containersCount containers running on host in total"
@@ -105,7 +108,7 @@ fi
 
 if [ "$_containersToStopCount" != "0" ]; then
   info "Stopping containers"
-  docker stop $_containersToStopCount
+  docker stop "${_containersToStop}"
 fi
 
 if [ -S "$DOCKER_SOCK" ]; then
@@ -141,13 +144,40 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
 		$SSH $PRE_SSH_COMMAND
 	fi		
-	
-	_influxdbTimeBackup="$(date +%s.%N)"		
-	echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-	tar -zcv $BACKUP_SOURCES | $SSH "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+
+	_influxdbTimeBackup="$(date +%s.%N)"			
+	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
+	then
+		echo "Will Synchronize To $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
+		_sshRemotePathNackupIncremental="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.incremental"
+		$SSH "mkdir -p ${_sshRemotePathNackupIncremental}"		
+        for i in {1..3};
+        do
+
+                rsync -avi --stats --delete ${BACKUP_SOURCES}/ ${remotehost}:${_sshRemotePathNackupIncremental}
+                if [ $? -eq 0 ]; then
+                        break;
+                fi
+
+                if [ $i -ge 3 ];
+                then
+                    echo "Backup failed after ${i} times"
+                    exit 1
+                fi
+
+                echo "Repeat ${i} time due to an error"
+                sleep 30
+        done
+		
+	else
+		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
+		tar -zcv $BACKUP_SOURCES | $SSH "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		
+	fi
 	echo "Upload finished"
 	_influxdbTimeBackedUp="$(date +%s.%N)"
-	_influxdbBackupSize="$($SSH "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"
+	_influxdbBackupSize="$($SSH "du -bs $SSH_REMOTE_PATH/$BACKUP_FILENAME")"		
+
 	
 	if [ ! -z "$POST_SSH_COMMAND" ]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
