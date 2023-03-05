@@ -32,11 +32,13 @@ function _containerLabelContain() {
 function _containerLabelValue() {
 	local _id="$1"
 	local _labelName="$2"
+	
 	docker ps --filter id=${_id} --format '{{.Label "${_labelName}"}}' | head -n 1
 }
 
 function _containerName() {
 	local _id="$1"
+	
 	docker ps --filter id=${_id} --format '{{.Names}}'
 }
 
@@ -51,15 +53,17 @@ function _docker(){
 	fi
 }
 
+# Examples
+#	_backupNumber 7
 function _backupNumber() {
-	local _fullEvery="$1"
-	year=$(date "+%Y")
-	dayofyear=$(date "+%j")
-	fullindays=$(expr ${dayofyear} % ${_fullEvery})
-	backupnumber=$(expr \( ${dayofyear} - ${fullindays} \) / ${fullEvery})
-	echo ${year}$(printf "%02d" "${backupnumber}")
+	local _fullEveryDays="$1"
+	
+	local _year=$(date "+%Y")
+	local _dayOfYear=$(date "+%j")
+	local _fullInDays=$(expr ${_dayOfYear} % ${_fullEveryDays})
+	local _backupNumber=$(expr \( ${_dayOfYear} - ${_fullInDays} \) / ${_fullEveryDays})
+	echo ${_year}$(printf "%02d" "${_backupNumber}")
 }
-
 
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
@@ -124,7 +128,7 @@ fi
 info "Creating backup"
 BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S}")"
 _backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.tar.gz"
-_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber)"
+_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
 
 ###
 # On-The-Fly: SSH
