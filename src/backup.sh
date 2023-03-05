@@ -9,12 +9,6 @@ function info {
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
-# Parameters:
-#	List Of Labels
-#
-# Returns
-#	List Of ContainerIds
-#
 # Examples
 # 	_containerLabelContain docker-volume-backup.stop-during-backup
 # 	_containerLabelContain docker-volume-backup.stop-during-backup=true docker-volume-backup.newLabel
@@ -32,13 +26,6 @@ function _containerLabelContain() {
 	fi
 }
 
-# Parameters: 
-#	container-id 
-#	label
-#
-# Returns:
-#	Value Assigned To Label
-#
 # Examples
 #	_containerLabelGetValue 960a26447d46 docker-volume-backup.stop-during-backup
 #
@@ -167,15 +154,17 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 			echo "Repeat ${i} time due to an error"
 			sleep 30
         done
+		_influxdbTimeBackedUp="$(date +%s.%N)"
+		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathIncrementalRemote}")"		
 		
 	else
 		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
 		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}"
+		_influxdbTimeBackedUp="$(date +%s.%N)"
+		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote}")"				
 		
 	fi
 	echo "Upload finished"
-	_influxdbTimeBackedUp="$(date +%s.%N)"
-	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote}")"		
 
 	
 	if [ ! -z "$POST_SSH_COMMAND" ]; then
