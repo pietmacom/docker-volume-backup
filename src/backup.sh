@@ -209,7 +209,7 @@ sleep "$BACKUP_WAIT_SECONDS"
 
 _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
-if [ -f "$BACKUP_FILENAME" ]; then
+if [ -f "$BACKUP_FILENAME" ];
 then
 	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
 	  info "Uploading backup to S3"
