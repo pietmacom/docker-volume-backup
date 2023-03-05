@@ -65,12 +65,12 @@ function _docker(){
 }
 
 
-
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
-SSH="ssh $SSH_CONFIG -p $SSH_PORT $SSH_USER@$SSH_HOST"
-SCP="scp $SSH_CONFIG"
-RSYNC=""
+SSH="ssh $SSH_CONFIG -p $SSH_PORT"
+SSH_REMOTE="${SSH} ${SSH_USER}@{$SSH_HOST}"
 
+SCP="scp ${SSH_CONFIG} -P ${SSH_PORT}"
+RSYNC="rsync -aviP -e "${SSH}" --stats --delete --port ${SSH_PORT}"
 
 # ---- 
 
@@ -137,23 +137,23 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	
 	# Test connection before 
 	echo -n "Test Connection... " && \
-		if $SSH "echo > /dev/null" 1>/dev/null 2>/dev/null ; then echo "Successed"; else echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
+		if ${SSH_REMOTE} "echo > /dev/null" 1>/dev/null 2>/dev/null ; then echo "Successed"; else echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
 	sleep 1
 
 	if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		$SSH $PRE_SSH_COMMAND
+		${SSH_REMOTE} $PRE_SSH_COMMAND
 	fi		
 
 	_influxdbTimeBackup="$(date +%s.%N)"			
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
 	then
 		echo "Will Synchronize To $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		_sshRemotePathNackupIncremental="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-incremental"
-		$SSH "mkdir -p ${_sshRemotePathNackupIncremental}"		
+		_sshRemotePathBackupIncremental="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-incremental"
+		${SSH_REMOTE} "mkdir -p ${_sshRemotePathBackupIncremental}"		
         for i in {1..3};
         do
-			rsync -avi -e '${SSH}' --stats --delete --port $SSH_PORT ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_sshRemotePathNackupIncremental}
+			${RSYNC} ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_sshRemotePathBackupIncremental}
 			if [ $? -eq 0 ]; then
 					break;
 			fi
@@ -170,7 +170,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 		
 	else
 		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		tar -zcv $BACKUP_SOURCES | $SSH "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
+		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > $SSH_REMOTE_PATH/$BACKUP_FILENAME"
 		
 	fi
 	echo "Upload finished"
@@ -180,7 +180,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	
 	if [ ! -z "$POST_SSH_COMMAND" ]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
-		$SSH $POST_SSH_COMMAND
+		${SSH_REMOTE} $POST_SSH_COMMAND
 	fi
 
 ###
@@ -243,16 +243,16 @@ then
 	  info "Uploading backup by means of SCP"
 	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
 		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		$SSH $PRE_SSH_COMMAND
+		${SSH_REMOTE} $PRE_SSH_COMMAND
 	  fi
 	  echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
 	  _influxdbTimeUpload="$(date +%s.%N)"
-	  $SCP $SSH_CONFIG -P $SSH_PORT $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	  ${SCP} $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
 	  echo "Upload finished"
 	  _influxdbTimeUploaded="$(date +%s.%N)"
 	  if [ ! -z "$POST_SSH_COMMAND" ]; then
 		echo "Post-scp command: $POST_SSH_COMMAND"
-		$SSH $POST_SSH_COMMAND
+		${SSH_REMOTE} $POST_SSH_COMMAND
 	  fi
 	fi
 
