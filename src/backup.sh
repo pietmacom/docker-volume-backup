@@ -81,7 +81,7 @@ function _sshBackup() {
 	
 	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT/$SSH_REMOTE_PATH"
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
-	then
+	then		
 		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
 		for i in {1..3};
 		do
@@ -95,7 +95,6 @@ function _sshBackup() {
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]];
 	then
-	
 		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}"
 		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote} | cut -f1")"	
 	
@@ -210,7 +209,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
 	fi
 	
 else 
-	_info "Creating and uploading backup in one steo (On-The-Fly)"
+	_info "Create and upload backup in one step (On-The-Fly)"
 	_influxdbTimeBackup="$(date +%s.%N)"
 	if [[ ! -z "$SSH_HOST" ]]; then _sshBackup; fi
 	_influxdbTimeBackedUp="$(date +%s.%N)"		
