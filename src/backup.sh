@@ -123,9 +123,10 @@ then
 	BACKUP_ONTHEFLY="true" # So incremental backup make sense
 fi
 
-if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" == "true" ]];
+if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];
 then	
-	echo "BACKUP_TARGET=${BACKUP_TARGET} not implemented. Try on of these..."
+	_info "Backup target [${BACKUP_TARGET}] not implemented."
+	echo "Try on of these...\n"
 	ls -1 backup-target-* | sed 's|^backup-target-||' | sed 's|.sh$||'	
 	exit 1
 fi
