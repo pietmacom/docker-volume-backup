@@ -72,8 +72,8 @@ function _backupNumber() {
 	
 	local _year=$(date "+%Y")
 	local _dayOfYear=$(date "+%j")
-	local _fullInDays=$(expr ${_dayOfYear} % ${_fullEveryDays})
-	local _backupNumber=$(expr \( ${_dayOfYear} - ${_fullInDays} \) / ${_fullEveryDays})
+	local _fullInDays=$(( ${_dayOfYear} % ${_fullEveryDays} ))
+	local _backupNumber=$(( (${_dayOfYear} - ${_fullInDays}) / ${_fullEveryDays}))
 	echo ${_year}$(printf "%02d" "${_backupNumber}")
 }
 
@@ -320,10 +320,10 @@ _influxdbLine="${INFLUXDB_MEASUREMENT}\
  size_compressed_bytes=$_influxdbBackupSize\
 ,containers_total=$_containersCount\
 ,containers_stopped=$_containersToStopCount\
-,time_wall=$((${_influxdbTimeFinish} - ${_influxdbTimeStart}))\
-,time_total=$((${_influxdbTimeFinish} - ${_influxdbTimeStart} - ${BACKUP_WAIT_SECONDS}))\
-,time_compress=$((${_influxdbTimeBackedUp} - ${_influxdbTimeBackup}))\
-,time_upload=$((${_influxdbTimeUploaded} - ${_influxdbTimeUpload}))\
+,time_wall=$(( ${_influxdbTimeFinish} - ${_influxdbTimeStart} ))\
+,time_total=$(( ${_influxdbTimeFinish} - ${_influxdbTimeStart} - ${BACKUP_WAIT_SECONDS} ))\
+,time_compress=$(( ${_influxdbTimeBackedUp} - ${_influxdbTimeBackup} ))\
+,time_upload=$(( ${_influxdbTimeUploaded} - ${_influxdbTimeUpload} ))\
 "
 echo "$_influxdbLine" | sed 's/ /,/g' | tr , '\n'
 
