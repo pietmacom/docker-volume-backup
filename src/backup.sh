@@ -50,7 +50,7 @@ function _docker(){
 	local _ids="$2"	
 	if [[  -z "${_ids}"  ]]; then return 0; fi
 
-	_info "${_action^} containers"
+	_info "${_action} containers"
 	docker ${_action} "${_ids}"
 }
 
@@ -231,7 +231,7 @@ if [ "$CHECK_HOST" != "false" ]; then
 fi
 
 _info "Backup starting"
-_influxdbTimeStart="$(date +%s.%N)"
+_influxdbTimeStart="$(date +%s)"
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_dockerContainerFilter "status=running" "label=docker-volume-backup.stop-during-backup=true" "${BACKUP_CUSTOM_LABEL}")"
 	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
@@ -258,10 +258,10 @@ if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
 	_backupFullFilename="$(date +"${BACKUP_FILENAME}tar.gz")"
 	
 	_info "Creating backup"
-	_influxdbTimeBackup="$(date +%s.%N)"
+	_influxdbTimeBackup="$(date +%s)"
 	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
 	_influxdbBackupSize="$(du --bytes $BACKUP_FILENAME | sed 's/\s.*$//')"
-	_influxdbTimeBackedUp="$(date +%s.%N)"
+	_influxdbTimeBackedUp="$(date +%s)"
 	
 	if [ ! -z "$GPG_PASSPHRASE" ]; then
 	  _info "Encrypting backup"
@@ -275,9 +275,9 @@ else
 	_backupFullFilename="${_backupIncrementalDirectoryName}.tar.gz"
 	
 	_info "Create and upload backup in one step (On-The-Fly)"
-	_influxdbTimeBackup="$(date +%s.%N)"
+	_influxdbTimeBackup="$(date +%s)"
 	if [[ ! -z "$SSH_HOST" ]]; then _sshBackup; fi
-	_influxdbTimeBackedUp="$(date +%s.%N)"		
+	_influxdbTimeBackedUp="$(date +%s)"		
 	echo "Upload finished"
 	
 fi
@@ -293,12 +293,12 @@ _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
 if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
 then
-	_influxdbTimeUpload="$(date +%s.%N)"
+	_influxdbTimeUpload="$(date +%s)"
 	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then _info "Uploading backup to S3" && _awsS3Backup; fi
 	if [ ! -z "$AWS_GLACIER_VAULT_NAME" ]; then _info "Uploading backup to GLACIER" && _awsGlacierBackup; fi
 	if [ ! -z "$SSH_HOST" ]; then _info "Uploading backup by means of SSH" && _sshBackup && exit 1; fi
 	if [ -d "$BACKUP_ARCHIVE" ]; then _info "Archiving backup" && _archiveBackup; fi
-	_influxdbTimeUploaded="$(date +%s.%N)"
+	_influxdbTimeUploaded="$(date +%s)"
 fi
 
 if [ ! -z "$POST_BACKUP_COMMAND" ]; then
@@ -313,7 +313,7 @@ if [ -f "$BACKUP_FILENAME" ]; then
 fi
 
 _info "Collecting metrics"
-_influxdbTimeFinish="$(date +%s.%N)"
+_influxdbTimeFinish="$(date +%s)"
 _influxdbLine="$_influxdbMeasurement\
 ,host=$BACKUP_HOSTNAME\
  size_compressed_bytes=$_influxdbBackupSize\
