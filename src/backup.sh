@@ -142,7 +142,7 @@ function _archiveBackup() {
 # /*
 # Declarations
 # */
-BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup")"
+BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup}")"
 DOCKER_SOCK="/var/run/docker.sock"
 
 if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
@@ -202,8 +202,9 @@ if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
 fi
 
 if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
-	_backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-volumes-%Y-%m-%dT%H-%M-%S}.tar.gz"
-	_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-volumes-%Y-%m-%dT%H-%M-%S})"
+	_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-volumes-%Y-%m-%dT%H-%M-%S"
+	_backupPathFullRemote="${_backupPathIncrementalRemote}.tar.gz"
+	
 
 	_info "Creating backup"
 	_influxdbTimeBackup="$(date +%s.%N)"
@@ -219,8 +220,9 @@ if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
 	fi
 	
 else 
-	_backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS}).tar.gz"
 	_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
+	_backupPathFullRemote="${_backupPathIncrementalRemote}.tar.gz"
+
 	
 	_info "Create and upload backup in one step (On-The-Fly)"
 	_influxdbTimeBackup="$(date +%s.%N)"
@@ -298,3 +300,4 @@ fi
 
 _info "Backup finished"
 echo "Will wait for next scheduled backup"
+
