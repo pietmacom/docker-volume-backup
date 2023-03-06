@@ -4,7 +4,7 @@
 set -e
 
 # Write cronjob env to file, fill in sensible defaults, and read them back in
-env > backup.env
+env | sed 's/=/="/;s/$/"/' > backup.env
 
 # Add our cron entry, and direct stdout & stderr to Docker commands stdout
 echo "Installing cron.d entry: docker-volume-backup"
