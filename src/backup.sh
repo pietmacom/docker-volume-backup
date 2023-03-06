@@ -148,7 +148,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 	_influxdbTimeBackup="$(date +%s.%N)"			
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
 	then
-		echo "Will Synchronize To $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
+		echo "Will Synchronize To $SSH_HOST:$SSH_PORT/$SSH_REMOTE_PATH:$SSH_PORT"
 		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
         for i in {1..3};
         do
@@ -173,7 +173,7 @@ if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
 		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
 		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}"
 		_influxdbTimeBackedUp="$(date +%s.%N)"
-		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote}")"				
+		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote} | cut -f1")"				
 		
 	fi
 	echo "Upload finished"
