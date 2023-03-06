@@ -3,6 +3,9 @@
 # Cronjobs don't inherit their env, so load from file
 source env.sh
 
+# /*
+# functions
+# */
 function _info {
   bold="\033[1m"
   reset="\033[0m"
@@ -81,7 +84,8 @@ function _sshBackup() {
 	fi
 	
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
-	then		
+	then
+		echo "Maintain remote increment backup"
 		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
 		for i in {1..3};
 		do
@@ -91,6 +95,12 @@ function _sshBackup() {
 			_info "Repeat ${i} time due to an error"
 			sleep 30
 		done
+		if [[ "${BACKUP_INCREMENTAL_MAINTAIN_FULL}" == "true" ]] \
+		   && $SSH_REMOTE -q "[[ -e ${_backupPathFullRemote} ]]";
+		then
+			echo "Create full backup vom increment backup"
+			tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}";
+		fi
 		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathIncrementalRemote} | cut -f1")"
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]];
@@ -132,9 +142,7 @@ function _archiveBackup() {
 # /*
 # Declarations
 # */
-BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S}")"
-_backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.tar.gz"
-_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
+BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup")"
 DOCKER_SOCK="/var/run/docker.sock"
 
 if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
@@ -194,6 +202,9 @@ if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
 fi
 
 if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
+	_backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-volumes-%Y-%m-%dT%H-%M-%S}.tar.gz"
+	_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-volumes-%Y-%m-%dT%H-%M-%S})"
+
 	_info "Creating backup"
 	_influxdbTimeBackup="$(date +%s.%N)"
 	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
@@ -208,6 +219,9 @@ if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
 	fi
 	
 else 
+	_backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS}).tar.gz"
+	_backupPathIncrementalRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
+	
 	_info "Create and upload backup in one step (On-The-Fly)"
 	_influxdbTimeBackup="$(date +%s.%N)"
 	if [[ ! -z "$SSH_HOST" ]]; then _sshBackup; fi
