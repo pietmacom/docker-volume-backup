@@ -70,7 +70,7 @@ function _sshBackup() {
 	SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 	SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
-	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT/$SSH_REMOTE_PATH"
+	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT$SSH_REMOTE_PATH"
 	echo -n "Test Connection... " && \
 		 if ! ${SSH_REMOTE} "echo 'Successed'; sleep 1" 2>/dev/null ; then echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
 
