@@ -96,7 +96,7 @@ function _sshBackup() {
 			sleep 30
 		done
 		if [[ "${BACKUP_INCREMENTAL_MAINTAIN_FULL}" == "true" ]] \
-		   && $SSH_REMOTE -q "[[ -e ${_backupPathFullRemote} ]]";
+		   && ! $SSH_REMOTE -q "[[ -e ${_backupPathFullRemote} ]]";
 		then
 			echo "Create full backup vom increment backup"
 			tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}";
@@ -142,7 +142,6 @@ function _archiveBackup() {
 # /*
 # Declarations
 # */
-BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup}")"
 DOCKER_SOCK="/var/run/docker.sock"
 
 if [ ! -z "$BACKUP_CUSTOM_LABEL" ]; then
