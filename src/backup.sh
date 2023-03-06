@@ -314,19 +314,20 @@ fi
 
 _info "Collecting metrics"
 _influxdbTimeFinish="$(date +%s)"
-_influxdbLine="$_influxdbMeasurement\
-,host=$BACKUP_HOSTNAME\
+_influxdbLine="${INFLUXDB_MEASUREMENT}\
+,host=${BACKUP_HOSTNAME}\
+\
  size_compressed_bytes=$_influxdbBackupSize\
 ,containers_total=$_containersCount\
 ,containers_stopped=$_containersToStopCount\
-,time_wall=$(expr ${_influxdbTimeFinish} - ${_influxdbTimeStart})\
-,time_total=$(expr ${_influxdbTimeFinish} - ${_influxdbTimeStart} - ${BACKUP_WAIT_SECONDS})\
-,time_compress=$(expr ${_influxdbTimeBackedUp} - ${_influxdbTimeBackup})\
-,time_upload=$(expr ${_influxdbTimeUploaded} - ${_influxdbTimeUpload})\
+,time_wall=$((${_influxdbTimeFinish} - ${_influxdbTimeStart}))\
+,time_total=$((${_influxdbTimeFinish} - ${_influxdbTimeStart} - ${BACKUP_WAIT_SECONDS}))\
+,time_compress=$((${_influxdbTimeBackedUp} - ${_influxdbTimeBackup}))\
+,time_upload=$((${_influxdbTimeUploaded} - ${_influxdbTimeUpload}))\
 "
 echo "$_influxdbLine" | sed 's/ /,/g' | tr , '\n'
 
-if [ ! -z "$INFLUXDB_URL" ]; then
+if [[ ! -z "$INFLUXDB_URL" ]]; then
   _info "Shipping metrics"
   curl \
     --silent \
