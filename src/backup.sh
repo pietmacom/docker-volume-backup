@@ -65,12 +65,68 @@ function _backupNumber() {
 	echo ${_year}$(printf "%02d" "${_backupNumber}")
 }
 
+function _sshBackup() {
+	echo -n "Test Connection... " && \
+		 if ! ${SSH_REMOTE} "echo 'Successed'; sleep 1" 2>/dev/null ; then echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
+
+	if [ ! -z "$PRE_SSH_COMMAND" ]; then
+		echo "Pre-scp command: $PRE_SSH_COMMAND"
+		${SSH_REMOTE} $PRE_SSH_COMMAND
+	fi
+	
+	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
+	then
+		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
+		for i in {1..3};
+		do
+			rsync -aviP -e "${SSH}" --stats --delete ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_backupPathIncrementalRemote}
+			if [ $? -eq 0 ]; then break; fi
+			if [ $i -ge 3 ]; then echo "Backup failed after ${i} times" && exit 1; fi
+			_info "Repeat ${i} time due to an error"
+			sleep 30
+		done
+		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathIncrementalRemote} | cut -f1")"
+		
+	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]];
+		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}"
+		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote} | cut -f1")"	
+	
+	else
+		${SCP} $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	
+	fi
+	
+	if [ ! -z "$POST_SSH_COMMAND" ]; then
+		echo "Post-scp command: $POST_SSH_COMMAND"
+		${SSH_REMOTE} $POST_SSH_COMMAND
+	fi
+}
+
+function _awsS3Backup() {
+	echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
+	aws $AWS_EXTRA_ARGS s3 cp --only-show-errors "$BACKUP_FILENAME" "s3://$AWS_S3_BUCKET_NAME/"
+}
+
+function _awsGlacierBackup() {
+	echo "Will upload to vault \"$AWS_GLACIER_VAULT_NAME\""
+	aws $AWS_EXTRA_ARGS glacier upload-archive --account-id - --vault-name "$AWS_GLACIER_VAULT_NAME" --body "$BACKUP_FILENAME"
+}
+
+function _archiveBackup() {
+	mv -v "$BACKUP_FILENAME" "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
+	if (($BACKUP_UID > 0)); then
+	chown -v $BACKUP_UID:$BACKUP_GID "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
+	fi
+}
+
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 SCP="scp ${SSH_CONFIG} -P ${SSH_PORT}"
 
-# ---- 
+# /*
+# Main Process
+# */
 
 if [ "$CHECK_HOST" != "false" ]; then
   _info "Check host availability"
@@ -130,64 +186,7 @@ BACKUP_FILENAME="$(date +"${BACKUP_FILENAME:-backup-volumes-%Y-%m-%dT%H-%M-%S}")
 _backupPathFullRemote="${SSH_REMOTE_PATH}/${BACKUP_FILENAME}.tar.gz"
 _backupPathIncrementalRemote="${SSH_REMOTE_PATH}/backup-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
 
-###
-# On-The-Fly: SSH
-#
-if [[ "${BACKUP_ONTHEFLY}" == "true" ]] && [[ ! -z "$SSH_HOST" ]]; then
-	_info "Uploading backup On-The-Fly by means of SSH"
-	
-	# Test connection before 
-	echo -n "Test Connection... " && \
-		 if ! ${SSH_REMOTE} "echo 'Successed'; sleep 1" 2>/dev/null ; then echo "Failed" && _docker start ${_containersToStop}  && exit 1; fi
-
-	if [ ! -z "$PRE_SSH_COMMAND" ]; then
-		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		${SSH_REMOTE} $PRE_SSH_COMMAND
-	fi		
-
-	_influxdbTimeBackup="$(date +%s.%N)"			
-	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
-	then
-		echo "Will Synchronize To $SSH_HOST:$SSH_PORT/$SSH_REMOTE_PATH:$SSH_PORT"
-		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
-        for i in {1..3};
-        do
-			rsync -aviP -e "${SSH}" --stats --delete ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${_backupPathIncrementalRemote}
-			if [ $? -eq 0 ]; then
-					break;
-			fi
-
-			if [ $i -ge 3 ];
-			then
-				echo "Backup failed after ${i} times"
-				exit 1
-			fi
-
-			echo "Repeat ${i} time due to an error"
-			sleep 30
-        done
-		_influxdbTimeBackedUp="$(date +%s.%N)"
-		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathIncrementalRemote}")"		
-		
-	else
-		echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH:$SSH_PORT"
-		tar -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${_backupPathFullRemote}"
-		_influxdbTimeBackedUp="$(date +%s.%N)"
-		_influxdbBackupSize="$($SSH_REMOTE "du -bs ${_backupPathFullRemote} | cut -f1")"				
-		
-	fi
-	echo "Upload finished"
-
-	
-	if [ ! -z "$POST_SSH_COMMAND" ]; then
-		echo "Post-scp command: $POST_SSH_COMMAND"
-		${SSH_REMOTE} $POST_SSH_COMMAND
-	fi
-
-###
-# Temporary File
-#
-else 	
+if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
 	_influxdbTimeBackup="$(date +%s.%N)"
 	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
 	_influxdbBackupSize="$(du --bytes $BACKUP_FILENAME | sed 's/\s.*$//')"
@@ -200,7 +199,15 @@ else
 	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
 	fi
 	
+else 
+	_info "Skip creating temporary file"
+	_info "Uploading backup"
+	_influxdbTimeBackup="$(date +%s.%N)"
+	if [[ ! -z "$SSH_HOST" ]]; then _sshBackup; fi
+	_influxdbTimeBackedUp="$(date +%s.%N)"		
+	echo "Upload finished"
 fi
+
 
 if [ -S "$DOCKER_SOCK" ]; then
   for id in $(_dockerContainerLabelContains "docker-volume-backup.exec-post-backup" "${CUSTOM_LABEL}"); do
@@ -221,51 +228,16 @@ sleep "$BACKUP_WAIT_SECONDS"
 
 _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
-if [ -f "$BACKUP_FILENAME" ];
+if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
 then
-	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then
-	  _info "Uploading backup to S3"
-	  echo "Will upload to bucket \"$AWS_S3_BUCKET_NAME\""
-	  _influxdbTimeUpload="$(date +%s.%N)"
-	  aws $AWS_EXTRA_ARGS s3 cp --only-show-errors "$BACKUP_FILENAME" "s3://$AWS_S3_BUCKET_NAME/"
-	  echo "Upload finished"
-	  _influxdbTimeUploaded="$(date +%s.%N)"
-	fi
-	if [ ! -z "$AWS_GLACIER_VAULT_NAME" ]; then
-	  _info "Uploading backup to GLACIER"
-	  echo "Will upload to vault \"$AWS_GLACIER_VAULT_NAME\""
-	  _influxdbTimeUpload="$(date +%s.%N)"
-	  aws $AWS_EXTRA_ARGS glacier upload-archive --account-id - --vault-name "$AWS_GLACIER_VAULT_NAME" --body "$BACKUP_FILENAME"
-	  echo "Upload finished"
-	  _influxdbTimeUploaded="$(date +%s.%N)"
-	fi
-
-	if [ ! -z "$SSH_HOST" ]; then
-	  _info "Uploading backup by means of SCP"
-	  if [ ! -z "$PRE_SSH_COMMAND" ]; then
-		echo "Pre-scp command: $PRE_SSH_COMMAND"
-		${SSH_REMOTE} $PRE_SSH_COMMAND
-	  fi
-	  echo "Will upload to $SSH_HOST:$SSH_REMOTE_PATH"
-	  _influxdbTimeUpload="$(date +%s.%N)"
-	  ${SCP} $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
-	  echo "Upload finished"
-	  _influxdbTimeUploaded="$(date +%s.%N)"
-	  if [ ! -z "$POST_SSH_COMMAND" ]; then
-		echo "Post-scp command: $POST_SSH_COMMAND"
-		${SSH_REMOTE} $POST_SSH_COMMAND
-	  fi
-	fi
-
-	if [ -d "$BACKUP_ARCHIVE" ]; then
-	  _info "Archiving backup"
-	  mv -v "$BACKUP_FILENAME" "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
-	  if (($BACKUP_UID > 0)); then
-		chown -v $BACKUP_UID:$BACKUP_GID "$BACKUP_ARCHIVE/$BACKUP_FILENAME"
-	  fi
-	fi
+	_influxdbTimeUpload="$(date +%s.%N)"
+	if [ ! -z "$AWS_S3_BUCKET_NAME" ]; then _info "Uploading backup to S3" && _awsS3Backup; fi
+	if [ ! -z "$AWS_GLACIER_VAULT_NAME" ]; then _info "Uploading backup to GLACIER" && _awsGlacierBackup; fi
+	if [ ! -z "$SSH_HOST" ]; then _sshBackup && exit 1; fi
+	if [ -d "$BACKUP_ARCHIVE" ]; then _info "Archiving backup" && _archiveBackup; fi
+	_influxdbTimeUploaded="$(date +%s.%N)"
 fi
-	
+
 if [ ! -z "$POST_BACKUP_COMMAND" ]; then
   _info "Post-backup command"
   echo "$POST_BACKUP_COMMAND"
