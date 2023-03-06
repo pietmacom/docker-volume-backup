@@ -70,8 +70,8 @@ function _dockerExecLabel() {
 function _backupNumber() {
 	local _fullEveryDays="$1"
 	
-	local _year=$(date "+%Y")
-	local _dayOfYear=$(date "+%j")
+	local _year=$(date '+%Y')
+	local _dayOfYear=$(date '+%j' | sed 's|^0*||')
 	local _fullInDays=$(( ${_dayOfYear} % ${_fullEveryDays} ))
 	local _backupNumber=$(( (${_dayOfYear} - ${_fullInDays}) / ${_fullEveryDays}))
 	echo ${_year}$(printf "%02d" "${_backupNumber}")
