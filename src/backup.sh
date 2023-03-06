@@ -79,7 +79,7 @@ function _sshBackup() {
 		${SSH_REMOTE} $PRE_SSH_COMMAND
 	fi
 	
-	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT/$SCP_DIRECTORY"
+	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT/$SSH_REMOTE_PATH"
 	if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
 	then
 		${SSH_REMOTE} "mkdir -p ${_backupPathIncrementalRemote}"		
