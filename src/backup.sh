@@ -162,7 +162,6 @@ fi
 
 _info "Backup starting"
 _influxdbTimeStart="$(date +%s.%N)"
-
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_dockerContainerLabelContains "docker-volume-backup.stop-during-backup=true" "${CUSTOM_LABEL}")"
 	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
