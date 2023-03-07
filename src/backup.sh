@@ -79,13 +79,17 @@ function _backupNumber() {
 
 function _hasFunction() {
     _functionName=${1}
-    if [ "$(LC_ALL=C type -t ${_functionName})" == "function" ];
+    if [[ "$(LC_ALL=C type ${_functionName})" == *function ]];
     then
 		return 0
 	else
 		return 1
     fi
 }
+
+# function _rotateBackups()
+# function _backupOnTheFly()
+# function _backup()
 
 #
 ### Environment
@@ -143,7 +147,7 @@ fi
 source "backup-target-${BACKUP_TARGET}.sh"
 
 if [[ "${BACKUP_ONTHEFLY}" == "true" ]] \
-   || ! _hasFunction "_backupOnTheFly";
+   && ! _hasFunction "_backupOnTheFly";
 then
 	echo "Backup On-The-Fly not supported by target [${BACKUP_TARGET}]."
 	exit 1	
@@ -249,6 +253,8 @@ if _hasFunction "_rotateBackups" ;
 then
 	_info "Rotate backups"
 	_rotateBackups
+else
+	_info "Rotation not implemeted...Skipped"
 fi
 
 _info "Collecting metrics"

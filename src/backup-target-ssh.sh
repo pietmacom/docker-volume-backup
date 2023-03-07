@@ -11,8 +11,16 @@ SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
-function _rotationListBackups() {
-	${SSH_REMOTE} "ls -1d  ${SSH_REMOTE_PATH}/*/"
+function _rotateBackups() {
+	keepcount="3"
+	
+	_info "Delete last increment backups..."
+    echo "Delete last increment backups."
+    ${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/*/ | sort -r | tail -n +2 | xargs -I {} rm -R {}"
+	
+	_info "Delete old (keep ${keepcount}) backups..."
+	echo "Delete old (keep ${keepcount}) backups."
+	${SSH_REMOTE} "ls -1 ${SSH_REMOTE_PATH}/*.tar.gz | sort -r | tail -n +$(expr $keepcount + 1) | xargs -I {} rm -R {}"
 }
 
 function _backupOnTheFly() {
