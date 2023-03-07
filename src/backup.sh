@@ -245,7 +245,7 @@ if [ -f "$BACKUP_FILENAME" ]; then
   rm -vf "$BACKUP_FILENAME"
 fi
 
-if _hasFunction "_rotateBackups" ];
+if _hasFunction "_rotateBackups" ;
 then
 	_info "Rotate backups"
 	_rotateBackups
