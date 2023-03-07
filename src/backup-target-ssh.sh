@@ -11,6 +11,14 @@ SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
+function _rotationListBackups() {
+	${SSH_REMOTE} "ls -1d  ${SSH_REMOTE_PATH}/*/"
+}
+
+function _backupOnTheFly() {
+	_backup
+}
+
 function _backup() {
 	if [[ -z "$SSH_HOST" ]]; then echo "SSH_HOST not set" && exit 1; fi
 	

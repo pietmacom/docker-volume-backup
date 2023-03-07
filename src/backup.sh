@@ -77,9 +77,14 @@ function _backupNumber() {
 	echo ${_year}$(printf "%02d" "${_backupNumber}")
 }
 
-function _backup() {
-	echo "BACKUP_TARGET=${BACKUP_TARGET} not implemented"
-	exit 1
+function _hasFunction() {
+    _functionName=${1}
+    if [ "$(LC_ALL=C type -t ${_functionName})" == "function" ];
+    then
+		return 0
+	else
+		return 1
+    fi
 }
 
 #
@@ -110,6 +115,10 @@ INFLUXDB_CREDENTIALS="${INFLUXDB_CREDENTIALS:-}"
 INFLUXDB_MEASUREMENT="${INFLUXDB_MEASUREMENT:-docker_volume_backup}"
 CHECK_HOST="${CHECK_HOST:-"false"}"
 
+
+
+# Script-Variables
+
 #
 ### Preperation
 #
@@ -132,6 +141,13 @@ then
 fi
 
 source "backup-target-${BACKUP_TARGET}.sh"
+
+if [[ "${BACKUP_ONTHEFLY}" == "true" ]] \
+   || ! _hasFunction "_backupOnTheFly";
+then
+	echo "Backup On-The-Fly not supported by target [${BACKUP_TARGET}]."
+	exit 1	
+fi
 
 #
 ### Main Process
@@ -175,7 +191,7 @@ if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
 fi
 
 if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
-	_backupFullFilename="$(date +"${BACKUP_FILENAME}tar.gz")"
+	_backupFullFilename="$(date +"${BACKUP_FILENAME}.tar.gz")"
 	
 	_info "Creating backup"
 	_influxdbTimeBackup="$(date +%s)"
@@ -196,7 +212,7 @@ else
 	
 	_info "Create and upload backup in one step (On-The-Fly)"
 	_influxdbTimeBackup="$(date +%s)"
-	_backup
+	_backupOnTheFly
 	_influxdbTimeBackedUp="$(date +%s)"		
 	echo "Upload finished"
 	
@@ -227,6 +243,12 @@ fi
 if [ -f "$BACKUP_FILENAME" ]; then
   _info "Cleaning up"
   rm -vf "$BACKUP_FILENAME"
+fi
+
+if _hasFunction "_rotateBackups" ];
+then
+	_info "Rotate backups"
+	_rotateBackups
 fi
 
 _info "Collecting metrics"
