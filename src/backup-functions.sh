@@ -255,8 +255,9 @@ function _backupStrategyExplain() {
 #_cron="5 9 * * *"
 #_cron="5 9 1 2 3"
 function _backupCronNormalize() {
-	local _cronSchedule="$1"
-	local _backupStrategyNormalized="$2"
+	local _backupStrategyNormalized="$1"
+	local _cronSchedule="$2"
+
 	
 	local _cronNormalized="$(echo "${_cronSchedule}" | tr '\t' ' '| sed "s|[ ][ ]*| |g")"
 	if [[ ! ${_cronNormalized} == *" * * *" ]] \
