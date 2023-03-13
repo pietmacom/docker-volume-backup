@@ -260,8 +260,8 @@ function _backupCronNormalize() {
 
 	
 	local _cronNormalized="$(echo "${_cronSchedule}" | tr '\t' ' '| sed "s|[ ][ ]*| |g")"
-	if [[ ! ${_cronNormalized} == *" * * *" ]] \
-		&& [[ ! ${_backupStrategyNormalized} == "0"* ]];
+	if [[ ! "${_cronNormalized}" == *" * * *" ]] \
+		&& [[ ! "${_backupStrategyNormalized}" == "0"* ]];
 	then
 		_cronNormalized="$(echo "${_cronNormalized}" |  cut -d ' ' -f 1,2) * * *"
 	fi
