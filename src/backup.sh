@@ -115,9 +115,14 @@ do
 	_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 	_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 	
-	_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"
-	_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
-	_fileName="${_filePrefix}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
+	if [[ "${_iterationNumber}" == "0" ]]; then
+		_filePrefix="${BACKUP_PREFIX}"
+		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
+	else
+		_retentionDays="$(( ${_iterationNumber} * ${_retentionNumber} ))"
+		_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
+		_fileName="${_filePrefix}-$(_backupNumber ${_iterationNumber})"
+	fi
 	_fileNameArchive="${_fileName}.tar.gz"
 	
 	if [[ "${_iteration}" == "i"* ]];
