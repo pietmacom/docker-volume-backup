@@ -3,8 +3,7 @@
 source backup.env # Cronjobs don't inherit their env, so load from file
 source backup-functions.sh
 
-#
-### Environment
+# Environment
 #
 DOCKER_SOCK="/var/run/docker.sock"
 BACKUP_TARGET="${BACKUP_TARGET:-ssh}"
@@ -32,8 +31,8 @@ CHECK_HOST="${CHECK_HOST:-"false"}"
 # Preperation
 #
 if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]]; then BACKUP_CUSTOM_LABEL="label=${BACKUP_CUSTOM_LABEL}"; fi
-BACKUP_STRATEGY="$(_backupStrategyNormalize ${BACKUP_STRATEGY})"
-BACKUP_CRON_SCHEDULE="$(_backupCronNormalize ${BACKUP_STRATEGY} ${BACKUP_CRON_SCHEDULE})"
+_backupStrategyNormalized="$(_backupStrategyNormalize ${BACKUP_STRATEGY})"
+_cronScheduleNormalized="$(_backupCronNormalize ${BACKUP_STRATEGY} ${BACKUP_CRON_SCHEDULE})"
 
 # Check Availability Of Target
 if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];

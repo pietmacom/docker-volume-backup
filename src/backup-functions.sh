@@ -5,7 +5,7 @@ BACKUP_DEFINITION="^(i*[0-9]+)(\*[0-9]+d*)?$"
 function _info {
   bold="\033[1m"
   reset="\033[0m"
-  echo -e "\n$bold[INFO] $1$reset\n"
+  echo -e "\n$bold[INFO] $@$reset\n"
 }
 
 function _error {
