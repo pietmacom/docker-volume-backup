@@ -13,11 +13,11 @@ _backupStrategyNormalized="$(_backupStrategyNormalize "${BACKUP_STRATEGY}")"
 _cronScheduleNormalized="$(_backupCronNormalize "${BACKUP_STRATEGY}" "${BACKUP_CRON_SCHEDULE}")"
 
 echo -n -e "Normalized backup strategy definition:\n\t${_backupStrategyNormalized}"\
-    && if [[ ! "${_backupStrategyNormalized}" == "${_backupStrategy}" ]]; then echo -n -e " (given: ${_backupStrategy})\n"; else echo -n -e "\n"; fi
+    && if [[ ! "${_backupStrategyNormalized}" == "${BACKUP_STRATEGY}" ]]; then echo -n -e " (given: ${BACKUP_STRATEGY})\n"; else echo -n -e "\n"; fi
 echo
 
 echo -n -e "Normalized Cron definition:\n\t${_cronScheduleNormalized}" \
-    && if [[ ! "${_cronScheduleNormalized}" == "${_cronSchedule}" ]]; then echo -n -e " (given: ${_cronSchedule})\n"; else echo -n -e "\n"; fi
+    && if [[ ! "${_cronScheduleNormalized}" == "${BACKUP_CRON_SCHEDULE}" ]]; then echo -n -e " (given: ${BACKUP_CRON_SCHEDULE})\n"; else echo -n -e "\n"; fi
 echo
 
 _backupStrategyExplain "${BACKUP_STRATEGY}"
