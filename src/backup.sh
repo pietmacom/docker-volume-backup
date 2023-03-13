@@ -56,7 +56,7 @@ do
 		else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
 	fi
 
-	if [[ "${_retention}" == *"d" ]];
+	if [[ "${_retention}" == *"d" ]]; then
 		if [[ "${_iteration}" == "i"* ]];
 			then _hasFunctionOrFail "_backupRemoveIncrementalOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalOlderThanDays";
 			else _hasFunctionOrFail "_backupRemoveArchiveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOlderThanDays";
