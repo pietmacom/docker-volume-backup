@@ -123,18 +123,14 @@ do
 	else		
 		if [[ -z "${_backupStrategyRetentionDays}" ]];
 		then
-			#_retentionDays="${_retentionNumber}";
-			_backupStrategyRetentionDays="${_retentionNumber}"
-			
+			_backupStrategyRetentionDays="${_retentionNumber}"			
 		elif [[ "${_retention}" == *"d" ]]; then
-			#_retentionDays="${_retentionNumber}";
 			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
 		else
-			#_retentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"	
 			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
 		fi		
 		
-		_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
+		_filePrefix="${BACKUP_PREFIX}-${_backupStrategyRetentionDays}"
 		_fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyRetentionDays})"
 	fi
 	_fileNameArchive="${_fileName}.tar.gz"
