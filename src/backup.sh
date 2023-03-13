@@ -132,7 +132,7 @@ do
 		then _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${_fileNameArchive}"
 		
 	else
-		tar -czvf "${_fileNameArchive}" -C $BACKUP_SOURCES $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
+		tar -C $BACKUP_SOURCES -czvf "${_fileNameArchive}" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
 		if [ -z "$GPG_PASSPHRASE" ];
 		then _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}"
 		else

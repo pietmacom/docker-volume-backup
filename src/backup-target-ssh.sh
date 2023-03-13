@@ -40,7 +40,7 @@ function _backupPostUploadCommand() {
 function _backupArchiveOnTheFly() {
 	local _fileName="${1}"
 	
-	tar -zcv -C $BACKUP_SOURCES $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+	tar -C $BACKUP_SOURCES -zcv $BACKUP_SOURCES | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
 	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
 }
 
