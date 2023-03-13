@@ -221,7 +221,7 @@ function _backupStrategyExplain() {
 			_backupsCount="1"
 		elif [[ "${_retention}" == *"d" ]]; then
 			_backupsCount="$(((${_retentionNumber} / ${_iterationNumber})))"
-			if (( $((${_retentionNumber} % ${_iterationNumber})) > 0)); then $((_backupsCount++)); fi
+			if [[ $((${_retentionNumber} % ${_iterationNumber})) -gt 0 ]]; then $((_backupsCount++)); fi
 		else
 			_backupsCount="${_retentionNumber}"
 		fi
@@ -237,15 +237,15 @@ function _backupStrategyExplain() {
 	do
 		_backupSize="$((${_example} * ${_backupStrategyBackupCount}))"
 		echo -n -e "\t${_backupStrategyBackupCount} Backups * "
-		if (( ${_example} < 1024 )); then echo -n "${_example} MB";
-		elif (( ${_example} < 1024000 )); then awk "BEGIN { printf \"%.0f GB\", (${_example}/1024) }";
-	   else awk "BEGIN { printf \"%.0f TB\", (${_example}/1024/1024) }";
+		if [[ ${_example} -lt 1024 ]]; then echo -n "${_example} MB";
+		elif [[ ${_example} -lt 1024000 ]]; then awk "BEGIN { printf \"%.0f GB\", (${_example}/1024) }";
+	    else awk "BEGIN { printf \"%.0f TB\", (${_example}/1024/1024) }";
 		fi
 		echo -n -e " \t=> "
 
 		echo -n "${_backupSize} MB"
-		if (( ${_backupSize} > 100 )); then awk "BEGIN { printf \" / %.2f GB\", (${_backupSize}/1024) }"; fi
-		if (( ${_backupSize} > 10240 )); then awk "BEGIN { printf \" / %.2f TB\", (${_backupSize}/1024/1024) }"; fi
+		if [[ ${_backupSize} -gt 100 ]]; then awk "BEGIN { printf \" / %.2f GB\", (${_backupSize}/1024) }"; fi
+		if [[ ${_backupSize} -gt 10240 ]]; then awk "BEGIN { printf \" / %.2f TB\", (${_backupSize}/1024/1024) }"; fi
 		echo -n -e "\n"
 	done
 	echo
