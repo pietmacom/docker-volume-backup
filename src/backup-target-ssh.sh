@@ -40,7 +40,7 @@ function _backupPostUploadCommand() {
 function _backupArchiveOnTheFly() {
 	local _fileName="${1}"
 	
-	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backuped [${_fileName}]" && return 0; fi
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi
 	
 	tar -zcv -C ${BACKUP_SOURCES} . | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
 	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"

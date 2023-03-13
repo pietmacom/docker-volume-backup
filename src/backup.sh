@@ -114,7 +114,7 @@ do
 	_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 	_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 	
-	if [[ "${_iterationNumber}" == "0" ]]; then
+	if [[ "${_iterationNumber}" == "0" ]]; then # Manual Backup
 		_filePrefix="${BACKUP_PREFIX}"
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
 	else
@@ -144,13 +144,13 @@ do
 	
 	if [[ "${_retention}" == *"d" ]]; then 
 		if [[ "${_iteration}" == "i"* ]];
-			then _execFunctionOrFail "Remove incremental backups [${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_retentionNumber}";
-			else _execFunctionOrFail "Remove archive backups [${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionNumber}";
+			then _execFunctionOrFail "Remove incremental backups [prefix: ${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_retentionNumber}";
+			else _execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionNumber}";
 		fi
 	else
 		if [[ "${_iteration}" == "i"* ]];
-			then _execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [${_filePrefix}*]" "_backupRemoveIncrementalOldest" "${_filePrefix} ${_retentionNumber}";
-			else _execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [${_filePrefix}*]" "_backupRemoveArchiveOldest" "${_filePrefix} ${_retentionNumber}";
+			then _execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_filePrefix}*]" "_backupRemoveIncrementalOldest" "${_filePrefix} ${_retentionNumber}";
+			else _execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_filePrefix}*]" "_backupRemoveArchiveOldest" "${_filePrefix} ${_retentionNumber}";
 		fi
 	fi
 done
