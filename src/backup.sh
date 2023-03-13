@@ -71,6 +71,8 @@ done
 
 # Main Process
 #
+_backupStrategyExplain "${_backupStrategyNormalized}"
+
 if [ "$CHECK_HOST" != "false" ]; then
   _info "Check host availability"
   TEMPFILE="$(mktemp)"
@@ -120,7 +122,11 @@ do
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
 	else
 		_backupStrategyIterationDays=$((${_backupStrategyIterationDays} * ${_iterationNumber}))
-		_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"		
+		_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"	
+		if [[ "${_retention}" == *"d" ]]; then
+			_retentionDays="${_retentionNumber}";
+		fi
+		
 		_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
 		_fileName="${_filePrefix}-$(_backupNumber ${_iterationNumber})"
 	fi

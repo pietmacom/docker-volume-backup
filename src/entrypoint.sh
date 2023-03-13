@@ -20,7 +20,7 @@ echo -n -e "Normalized Cron definition:\n\t${_cronScheduleNormalized}" \
     && if [[ ! "${_cronScheduleNormalized}" == "${BACKUP_CRON_SCHEDULE}" ]]; then echo -n -e " (given: ${BACKUP_CRON_SCHEDULE})\n"; else echo -n -e "\n"; fi
 echo
 
-_backupStrategyExplain "${BACKUP_STRATEGY}"
+_backupStrategyExplain "${_backupStrategyNormalized}"
 
 # Add our cron entry, and direct stdout & stderr to Docker commands stdout
 echo "Installing cron.d entry: docker-volume-backup"
