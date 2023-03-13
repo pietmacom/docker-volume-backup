@@ -98,7 +98,7 @@ function _hasFunctionOrFail() {
 
 	if ! _hasFunction "${_functionName}";
 	then 
-		_info "${_errorMessage}"
+		_error "${_errorMessage}"
 		exit 1
 	fi
 }
@@ -133,7 +133,7 @@ function _execFunctionOrFail() {
 		_info "${_infoMessage}"
 		${_functionName} $@
 	else
-		_info "${_functionName} not implemented."
+		_error "${_functionName} not implemented."
 		exit 1
     fi
 }
@@ -170,7 +170,7 @@ function _backupStrategyNormalize() {
 	done
 	_backupStrategyNormalized=$(echo "${_backupStrategyNormalized}" | sed -r "s| $||")
 
-	if [[ ${_backupStrategyNormalized} == *"?" ]];
+	if [[ "${_backupStrategyNormalized}" == *"\\?" ]];
 	then
 		_error "Strategy is broken: Missing last retention rule [${_backupStrategyNormalized}]."
 		exit 1
