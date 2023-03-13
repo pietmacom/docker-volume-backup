@@ -57,8 +57,15 @@ do
 	fi
 
 	if [[ "${_retention}" == *"d" ]];
-		then _hasFunctionOrFail "_backupRemoveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveOlderThanDays";
-		else _hasFunctionOrFail "_backupRemoveOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveOldest";
+		if [[ "${_iteration}" == "i"* ]];
+			then _hasFunctionOrFail "_backupRemoveIncrementalOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalOlderThanDays";
+			else _hasFunctionOrFail "_backupRemoveArchiveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOlderThanDays";
+		fi
+	else
+		if [[ "${_iteration}" == "i"* ]];
+			then _hasFunctionOrFail "_backupRemoveIncrementalOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalOldest";
+			else _hasFunctionOrFail "_backupRemoveArchiveOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOldest";
+		fi
 	fi
 done
 
