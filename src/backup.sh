@@ -38,8 +38,7 @@ BACKUP_CRON_SCHEDULE="$(_backupCronNormalize ${BACKUP_STRATEGY} ${BACKUP_CRON_SC
 # Check Availability Of Target
 if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];
 then	
-	_info "Backup target [${BACKUP_TARGET}] not implemented. Try one of these...\n"
-	ls -1 backup-target-* | sed 's|^backup-target-||' | sed 's|.sh$||'	
+	_error "Backup target [${BACKUP_TARGET}] not implemented. Try one of these...\n$(ls -1 backup-target-* | sed 's|^backup-target-||' | sed 's|.sh$||')"
 	exit 1
 fi
 source "backup-target-${BACKUP_TARGET}.sh"
@@ -53,7 +52,7 @@ do
 	
 	if [[ "${_iteration}" == "i"* ]];
 		then _hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";		
-	else if [[ "${BACKUP_ONTHEFLY}" == "true" ]];
+	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]];
 		then _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";
 		else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
 	fi
@@ -118,7 +117,7 @@ do
 	if [[ "${_iteration}" == "i"* ]];
 		then _execFunctionOrFail "Create incremental backup" "_backupIncremental" "${_fileName}" 
 		
-	else if [[ "${BACKUP_ONTHEFLY}" == "true" ]];
+	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]];
 		then _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${_fileNameArchive}"
 		
 	else
