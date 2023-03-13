@@ -4,8 +4,8 @@
 set -e
 
 # Write cronjob env to file, fill in sensible defaults, and read them back in
-BACKUP_STRATEGY="${BACKUP_STRATEGY:-0*10d}"
-BACKUP_CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-0 9 * * *}"
+export BACKUP_STRATEGY="${BACKUP_STRATEGY:-0*10d}"
+export BACKUP_CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-0 9 * * *}"
 env | sed 's/=/="/;s/$/"/' > backup.env
 
 source backup-functions.sh
