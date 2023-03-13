@@ -32,7 +32,6 @@ CHECK_HOST="${CHECK_HOST:-"false"}"
 #
 if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]]; then BACKUP_CUSTOM_LABEL="label=${BACKUP_CUSTOM_LABEL}"; fi
 _backupStrategyNormalized="$(_backupStrategyNormalize ${BACKUP_STRATEGY})"
-_cronScheduleNormalized="$(_backupCronNormalize ${BACKUP_STRATEGY} ${BACKUP_CRON_SCHEDULE})"
 
 # Check Availability Of Target
 if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];
