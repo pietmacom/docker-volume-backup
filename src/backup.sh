@@ -1,95 +1,7 @@
 #!/bin/sh -e
 
-# Cronjobs don't inherit their env, so load from file
-source backup.env
-
-#
-### Functions
-#
-function _info {
-  bold="\033[1m"
-  reset="\033[0m"
-  echo -e "\n$bold[INFO] $1$reset\n"
-}
-
-function _dockerContainerFilter() {
-	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
-	
-	local _filters=""
-	for label in "$@"
-	do
-		if [[ -z "${label}" ]]; then continue; fi
-		_filters="${_filters} --filter "${label}""
-	done
-	
-	if [[ ! -z "${_filters}" ]];
-	then
-		docker container ls --format "{{.ID}}" --filter "status=running" ${_filters}
-	fi
-}
-
-function _dockerContainerLabelValue() {
-	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
-	
-	local _id="$1"
-	local _labelName="$2"
-	docker container ls --filter id=${_id} --format '{{.Label "${_labelName}"}}' | head -n 1
-}
-
-function _dockerContainerName() {
-	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
-	
-	local _id="$1"	
-	docker container ls --filter id=${_id} --format '{{.Names}}'
-}
-
-function _docker(){
-	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
-	
-	local _action="$1"
-	local _ids="$2"	
-	if [[  -z "${_ids}"  ]]; then return 0; fi
-
-	_info "${_action} containers"
-	docker ${_action} "${_ids}"
-}
-
-function _dockerExecLabel() {
-	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
-	
-	local _label="$1"
-	for id in $(_dockerContainerFilter "label=${_label}" "${BACKUP_CUSTOM_LABEL}"); do
-		name="$(_dockerContainerName "$id")"
-		cmd="$(_dockerContainerLabelValue "${id}" "${_label}")"
-		_info "Exec ${_label} command for: $name"
-		echo docker exec -t $id $cmd # echo the command we're using, for debuggability
-		eval docker exec -t $id $cmd
-	done
-}
-
-function _backupNumber() {
-	local _fullEveryDays="$1"
-	
-	local _year=$(date '+%Y')
-	local _dayOfYear=$(date '+%j' | sed 's|^0*||')
-	local _fullInDays=$(( ${_dayOfYear} % ${_fullEveryDays} ))
-	local _backupNumber=$(( (${_dayOfYear} - ${_fullInDays}) / ${_fullEveryDays}))
-	echo ${_year}$(printf "%02d" "${_backupNumber}")
-}
-
-function _hasFunction() {
-    _functionName=${1}
-    if [[ "$(LC_ALL=C type ${_functionName})" == *function ]];
-    then
-		return 0
-	else
-		return 1
-    fi
-}
-
-# function _rotateBackups()
-# function _backupOnTheFly()
-# function _backup()
+source backup.env # Cronjobs don't inherit their env, so load from file
+source backup-functions.sh
 
 #
 ### Environment
@@ -99,15 +11,13 @@ BACKUP_TARGET="${BACKUP_TARGET:-ssh}"
 
 PRE_BACKUP_COMMAND="${PRE_BACKUP_COMMAND:-}"
 POST_BACKUP_COMMAND="${POST_BACKUP_COMMAND:-}"
-BACKUP_ONTHEFLY="${BACKUP_ONTHEFLY:-false}"
-BACKUP_INCREMENTAL="${BACKUP_INCREMENTAL:-false}"
-BACKUP_INCREMENTAL_FILEPREFIX="${BACKUP_INCREMENTAL_FILEPREFIX:-backup}"
-BACKUP_INCREMENTAL_MAINTAIN_FULL="${BACKUP_INCREMENTAL_MAINTAIN_FULL:-false}"
-BACKUP_INCREMENTAL_MAINTAIN_DAYS="${BACKUP_INCREMENTAL_MAINTAIN_DAYS:-7}"
+
+BACKUP_CRON_SCHEDULE="${BACKUP_CRON:-0 9 * * *}"
+BACKUP_ONTHEFLY="${BACKUP_ONTHEFLY:-true}"
+BACKUP_STRATEGY="${BACKUP_STRATEGY:-0*10d}"
+BACKUP_PREFIX="${BACKUP_PREFIX:-backup-volume}"
 
 BACKUP_SOURCES="${BACKUP_SOURCES:-/backup}"
-BACKUP_CRON_EXPRESSION="${BACKUP_CRON_EXPRESSION:-@daily}"
-BACKUP_FILENAME=${BACKUP_FILENAME:-"backup-%Y-%m-%dT%H-%M-%S"}
 BACKUP_WAIT_SECONDS="${BACKUP_WAIT_SECONDS:-0}"
 BACKUP_HOSTNAME="${BACKUP_HOSTNAME:-$(hostname)}"
 BACKUP_CUSTOM_LABEL="${BACKUP_CUSTOM_LABEL:-}"
@@ -119,42 +29,43 @@ INFLUXDB_CREDENTIALS="${INFLUXDB_CREDENTIALS:-}"
 INFLUXDB_MEASUREMENT="${INFLUXDB_MEASUREMENT:-docker_volume_backup}"
 CHECK_HOST="${CHECK_HOST:-"false"}"
 
-
-
-# Script-Variables
-
+# Preperation
 #
-### Preperation
-#
-if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]];
-then
-	BACKUP_CUSTOM_LABEL="label=${BACKUP_CUSTOM_LABEL}"
-fi
+if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]]; then BACKUP_CUSTOM_LABEL="label=${BACKUP_CUSTOM_LABEL}"; fi
+BACKUP_STRATEGY="$(_backupStrategyNormalize ${BACKUP_STRATEGY})"
+BACKUP_CRON_SCHEDULE="$(_backupCronNormalize ${BACKUP_STRATEGY} ${BACKUP_CRON_SCHEDULE})"
 
-if [[ "${BACKUP_INCREMENTAL}" == "true" ]];
-then
-	BACKUP_ONTHEFLY="true" # So incremental backup make sense
-fi
-
+# Check Availability Of Target
 if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];
 then	
-	_info "Backup target [${BACKUP_TARGET}] not implemented."
-	echo "Try on of these...\n"
+	_info "Backup target [${BACKUP_TARGET}] not implemented. Try one of these...\n"
 	ls -1 backup-target-* | sed 's|^backup-target-||' | sed 's|.sh$||'	
 	exit 1
 fi
-
 source "backup-target-${BACKUP_TARGET}.sh"
 
-if [[ "${BACKUP_ONTHEFLY}" == "true" ]] \
-   && ! _hasFunction "_backupOnTheFly";
-then
-	echo "Backup On-The-Fly not supported by target [${BACKUP_TARGET}]."
-	exit 1	
-fi
-
+# Check Availability Of Functions
 #
-### Main Process
+for _definition in ${_backupStrategyNormalized}
+do
+	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
+	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+	
+	if [[ "${_iteration}" == "i"* ]];
+		then _hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";		
+	else if [[ "${BACKUP_ONTHEFLY}" == "true" ]];
+		then _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";
+		else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
+	fi
+
+	if [[ "${_retention}" == *"d" ]];
+		then _hasFunctionOrFail "_backupRemoveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveOlderThanDays";
+		else _hasFunctionOrFail "_backupRemoveOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveOldest";
+	fi
+done
+
+
+# Main Process
 #
 if [ "$CHECK_HOST" != "false" ]; then
   _info "Check host availability"
@@ -187,40 +98,57 @@ fi
 
 _docker stop ${_containersToStop}
 _dockerExecLabel "docker-volume-backup.exec-pre-backup"
+_exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
 
-if [ ! -z "$PRE_BACKUP_COMMAND" ]; then
-  _info "Pre-backup command"
-  echo "$PRE_BACKUP_COMMAND"
-  eval $PRE_BACKUP_COMMAND
-fi
-
-if [[ "${BACKUP_ONTHEFLY}" == "false" ]]; then
-	_backupFullFilename="$(date +"${BACKUP_FILENAME}.tar.gz")"
+_execFunction "Test connection" "_backupTestConnection"
+_execFunction "Pre-Upload command" "_backupPreUploadCommand"
+_influxdbTimeBackup="$(date +%s)"
+for _definition in ${_backupStrategyNormalized}
+do
+	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
+	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+	_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
+	_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 	
-	_info "Creating backup"
-	_influxdbTimeBackup="$(date +%s)"
-	tar -czvf "$BACKUP_FILENAME" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
-	_influxdbBackupSize="$(du --bytes $BACKUP_FILENAME | sed 's/\s.*$//')"
-	_influxdbTimeBackedUp="$(date +%s)"
+	_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"
+	_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
+	_fileName="${_filePrefix}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
+	_fileNameArchive="${_fileName}.tar.gz"
 	
-	if [ ! -z "$GPG_PASSPHRASE" ]; then
-	  _info "Encrypting backup"
-	  gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${BACKUP_FILENAME}.gpg" $BACKUP_FILENAME
-	  rm $BACKUP_FILENAME
-	  BACKUP_FILENAME="${BACKUP_FILENAME}.gpg"
+	if [[ "${_iteration}" == "i"* ]];
+		then _execFunctionOrFail "Create incremental backup" "_backupIncremental" "${_fileName}" 
+		
+	else if [[ "${BACKUP_ONTHEFLY}" == "true" ]];
+		then _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${_fileNameArchive}"
+		
+	else
+		tar -czvf "${_fileNameArchive}" $BACKUP_SOURCES # allow the var to expand, in case we have multiple sources
+		if [ -z "$GPG_PASSPHRASE" ];
+		then _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}"
+		else
+			_info "Encrypting backup"
+			gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${_fileNameArchive}.gpg" ${_fileNameArchive}
+			rm ${_fileNameArchive}
+			_execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}.gpg"
+		fi
 	fi
 	
-else 
-	_backupIncrementalDirectoryName="${BACKUP_INCREMENTAL_FILEPREFIX}-$(_backupNumber ${BACKUP_INCREMENTAL_MAINTAIN_DAYS})"
-	_backupFullFilename="${_backupIncrementalDirectoryName}.tar.gz"
-	
-	_info "Create and upload backup in one step (On-The-Fly)"
-	_influxdbTimeBackup="$(date +%s)"
-	_backupOnTheFly
-	_influxdbTimeBackedUp="$(date +%s)"		
-	echo "Upload finished"
-	
-fi
+	if [[ "${_retention}" == *"d" ]]; then 
+		if [[ "${_iteration}" == "i"* ]];
+			then _execFunctionOrFail "Remove incremental backups [${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_retentionNumber}";
+			else _execFunctionOrFail "Remove archive backups [${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionNumber}";
+		fi
+	else
+		if [[ "${_iteration}" == "i"* ]];
+			then _execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [${_filePrefix}*]" "_backupRemoveIncrementalOldest" "${_filePrefix} ${_retentionNumber}";
+			else _execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [${_filePrefix}*]" "_backupRemoveArchiveOldest" "${_filePrefix} ${_retentionNumber}";
+		fi
+	fi
+done
+_influxdbTimeBackedUp="$(date +%s)"
+_execFunction "Post-Upload command" "_backupPostUploadCommand"
+echo "Upload finished"
+
 
 _dockerExecLabel "docker-volume-backup.exec-post-backup"
 _docker start ${_containersToStop}
@@ -233,29 +161,24 @@ _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
 if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
 then
+	_execFunction "Test connection" "_backupTestConnection"
+	_execFunction "Pre-Upload command" "_backupPreUploadCommand"
 	_influxdbTimeUpload="$(date +%s)"
-	_backup
+	_execFunctionOrFail "Upload archive" "_backupArchive"
 	_influxdbTimeUploaded="$(date +%s)"
+	_execFunction "Post-Upload command" "_backupPostUploadCommand"
 fi
 
-if [ ! -z "$POST_BACKUP_COMMAND" ]; then
-  _info "Post-backup command"
-  echo "$POST_BACKUP_COMMAND"
-  eval $POST_BACKUP_COMMAND
-fi
+_exec "Post-backup command" "$POST_BACKUP_COMMAND"
 
 if [ -f "$BACKUP_FILENAME" ]; then
   _info "Cleaning up"
   rm -vf "$BACKUP_FILENAME"
 fi
 
-if _hasFunction "_rotateBackups" ;
-then
-	_info "Rotate backups"
-	_rotateBackups
-else
-	_info "Rotation not implemeted...Skipped"
-fi
+
+_execFunction "Remove oldest backups" "_backupRemoveOldest" 3
+
 
 _info "Collecting metrics"
 _influxdbTimeFinish="$(date +%s)"
