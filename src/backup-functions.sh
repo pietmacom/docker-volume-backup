@@ -182,7 +182,7 @@ function _backupStrategyExplain() {
 	local _backupStrategyNormalized="$1"
 
 	echo -e "Explained backup strategy:"
-	_backupStrategyRetentionDays="1"
+	_backupStrategyIterationDays="1"
 	_backupStrategyBackupCount="0"
 	for _definition in ${_backupStrategyNormalized}
 	do
@@ -191,8 +191,8 @@ function _backupStrategyExplain() {
 		_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 		_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 
-		_backupStrategyRetentionDays=$((${_backupStrategyRetentionDays} * ${_iterationNumber}))
-		_retentionDays="$(( (${_backupStrategyRetentionDays} * ${_retentionNumber})))"
+		_backupStrategyIterationDays=$((${_backupStrategyIterationDays} * ${_iterationNumber}))
+		_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"
 		if [[ "${_retention}" == *"d" ]]; then
 			_retentionDays="${_retentionNumber}";
 		fi
@@ -204,7 +204,7 @@ function _backupStrategyExplain() {
 
 		if [[ "${_iterationNumber}" == "0" ]];
 			then echo -n "every run "
-			else echo -n "every ${_backupStrategyRetentionDays}. days "
+			else echo -n "every ${_backupStrategyIterationDays}. days "
 		fi
 
 		echo -n "and keep "

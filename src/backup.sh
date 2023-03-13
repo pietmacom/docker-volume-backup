@@ -109,6 +109,8 @@ _exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
 _execFunction "Test connection" "_backupTestConnection"
 _execFunction "Pre-Upload command" "_backupPreUploadCommand"
 _influxdbTimeBackup="$(date +%s)"
+
+_backupStrategyIterationDays=""
 _backupStrategyRetentionDays=""
 for _definition in ${_backupStrategyNormalized}
 do
@@ -122,16 +124,22 @@ do
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
 	else		
 		if [[ -z "${_backupStrategyRetentionDays}" ]];
-		then
-			_backupStrategyRetentionDays="${_retentionNumber}"			
-		elif [[ "${_retention}" == *"d" ]]; then
-			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
-		else
-			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
-		fi		
-		
+			then _backupStrategyRetentionDays="${_retentionNumber}"			
+		elif [[ "${_retention}" == *"d" ]];
+			then _backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
+			else _backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
+		fi				
 		_filePrefix="${BACKUP_PREFIX}-${_backupStrategyRetentionDays}"
-		_fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyRetentionDays})"
+		
+		if [[ -z "${_backupStrategyIterationDays}" ]];
+			then _backupStrategyIterationDays="${_iterationNumber}"
+			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
+		fi
+		
+		if [[ "${_iteration}" == "i"* ]];
+			then _fileName="${_filePrefix}-$(_backupNumber ${_retentionNumber})";
+			else _fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
+		fi
 	fi
 	_fileNameArchive="${_fileName}.tar.gz"
 	
@@ -155,8 +163,8 @@ do
 	
 	if [[ "${_retention}" == *"d" ]]; then 
 		if [[ "${_iteration}" == "i"* ]];
-			then _execFunctionOrFail "Remove incremental backups [prefix: ${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_retentionNumber}";
-			else _execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_retentionNumber} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionNumber}";
+			then _execFunctionOrFail "Remove incremental backups [prefix: ${_filePrefix}*] older than ${_backupStrategyRetentionDays} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_backupStrategyRetentionDays}";
+			else _execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_backupStrategyRetentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_backupStrategyRetentionDays}";
 		fi
 	else
 		if [[ "${_iteration}" == "i"* ]];
