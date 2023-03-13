@@ -8,6 +8,12 @@ function _info {
   echo -e "\n$bold[INFO] $1$reset\n"
 }
 
+function _error {
+  bold="\033[1m"
+  reset="\033[0m"
+  echo -e "\n$bold[ERROR] $@$reset\n" 1>&2
+}
+
 function _dockerContainerFilter() {
 	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
 	
@@ -147,9 +153,9 @@ function _backupStrategyNormalize() {
 	do
 		if [[ ! "${_definition}" =~ ${BACKUP_DEFINITION} ]];
 		then
-			echo "Strategy definition incorrect [${_definition}]."
-			echo -e "Allowed defintions:"
-			for _example in "1" "1*7" "1*7d" "i1" "i1*7" "i1*7d"; do echo -e "\t${_example}"; done
+			_error "Strategy definition incorrect [${_definition}]."
+			_error "Allowed defintions:"
+			for _example in "1" "1*7" "1*7d" "i1" "i1*7" "i1*7d"; do _error "\t${_example}"; done
 			exit 1
 		fi
 
@@ -166,7 +172,7 @@ function _backupStrategyNormalize() {
 
 	if [[ ${_backupStrategyNormalized} == *"?" ]];
 	then
-		echo "Strategy is broken: Missing last retention rule [${_backupStrategyNormalized}]."
+		_error "Strategy is broken: Missing last retention rule [${_backupStrategyNormalized}]."
 		exit 1
 	fi
 	echo "${_backupStrategyNormalized}"
