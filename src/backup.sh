@@ -109,7 +109,7 @@ _exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
 _execFunction "Test connection" "_backupTestConnection"
 _execFunction "Pre-Upload command" "_backupPreUploadCommand"
 _influxdbTimeBackup="$(date +%s)"
-_backupStrategyIterationDays="1"
+_backupStrategyRetentionDays=""
 for _definition in ${_backupStrategyNormalized}
 do
 	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
@@ -120,15 +120,22 @@ do
 	if [[ "${_iterationNumber}" == "0" ]]; then # Manual Backup
 		_filePrefix="${BACKUP_PREFIX}"
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
-	else
-		_backupStrategyIterationDays=$((${_backupStrategyIterationDays} * ${_iterationNumber}))
-		_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"	
-		if [[ "${_retention}" == *"d" ]]; then
-			_retentionDays="${_retentionNumber}";
-		fi
+	else		
+		if [[ -z "${_backupStrategyRetentionDays}" ]];
+		then
+			#_retentionDays="${_retentionNumber}";
+			_backupStrategyRetentionDays="${_retentionNumber}"
+			
+		elif [[ "${_retention}" == *"d" ]]; then
+			#_retentionDays="${_retentionNumber}";
+			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
+		else
+			#_retentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"	
+			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
+		fi		
 		
 		_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
-		_fileName="${_filePrefix}-$(_backupNumber ${_iterationNumber})"
+		_fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyRetentionDays})"
 	fi
 	_fileNameArchive="${_fileName}.tar.gz"
 	
