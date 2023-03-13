@@ -31,7 +31,7 @@ CHECK_HOST="${CHECK_HOST:-"false"}"
 # Preperation
 #
 if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]]; then BACKUP_CUSTOM_LABEL="label=${BACKUP_CUSTOM_LABEL}"; fi
-_backupStrategyNormalized="$(_backupStrategyNormalize ${BACKUP_STRATEGY})"
+_backupStrategyNormalized="$(_backupStrategyNormalize "${BACKUP_STRATEGY}")"
 
 # Check Availability Of Target
 if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];
@@ -107,6 +107,7 @@ _exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
 _execFunction "Test connection" "_backupTestConnection"
 _execFunction "Pre-Upload command" "_backupPreUploadCommand"
 _influxdbTimeBackup="$(date +%s)"
+_backupStrategyIterationDays="1"
 for _definition in ${_backupStrategyNormalized}
 do
 	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
@@ -118,7 +119,8 @@ do
 		_filePrefix="${BACKUP_PREFIX}"
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
 	else
-		_retentionDays="$(( ${_iterationNumber} * ${_retentionNumber} ))"
+		_backupStrategyIterationDays=$((${_backupStrategyIterationDays} * ${_iterationNumber}))
+		_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"		
 		_filePrefix="${BACKUP_PREFIX}-${_retentionDays}"
 		_fileName="${_filePrefix}-$(_backupNumber ${_iterationNumber})"
 	fi
