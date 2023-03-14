@@ -8,8 +8,12 @@ _backupRestorTarget="${2:-${BACKUP_SOURCES}}"
 
 if [[ -z "${_backupName}" ]]; then
 	_hasFunctionOrFail "_backupRestoreListFiles not Implemented by backup target [${BACKUP_TARGET}]" "_backupRestoreListFiles"
-	_execFunctionOrFail "Please pass file from list to be restored" "_backupRestoreListFiles" "${BACKUP_PREFIX}"
+	_execFunctionOrFail "Please pass filename from list to be restored" "_backupRestoreListFiles" "${BACKUP_FILENAME_PREFIX}"
 	exit 0
+fi
+
+if [[ ! "${_backupName}" == "${BACKUP_FILENAME_PREFIX}"* ]]; then
+	_error "Filename [${_backupName}] does not match prefix [${_backupName}]"
 fi
 
 _hasFunctionOrFail "_backupRestore not Implemented by backup target [${BACKUP_TARGET}]" "_backupRestore"

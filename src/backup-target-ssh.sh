@@ -7,7 +7,7 @@ SSH_USER="${SSH_USER:-}"
 SSH_REMOTE_PATH="${SSH_REMOTE_PATH:-.}"
 
 # Internal
-SSH_CONFIG="-o StrictHostKeyChecking=no -i /ssh/id_rsa"
+SSH_CONFIG="-o StrictHostKeyChecking=no -i /root/.ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 

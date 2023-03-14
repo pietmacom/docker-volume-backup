@@ -94,17 +94,18 @@ do
 		_retentionDays=$(( ${_backupStrategyIterationDays} + ${_retentionNumber} ))
 	fi
 	
-	if [[ "${_iterationNumber}" == "0" ]]; then # Backup every run
-		_filePrefix="${BACKUP_PREFIX}"
-		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
-	else
-		_filePrefix="${BACKUP_PREFIX}-i${_backupStrategyIterationDays}r${_retentionDays}"		
-		if [[ "${_iteration}" == "i"* ]];
-			then _fileName="${_filePrefix}-$(_backupNumber ${_retentionDays})";
-			else _fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
-		fi
-	fi
+	_fileNamePrefix="${BACKUP_FILENAME_PREFIX}-i${_backupStrategyIterationDays}r${_retentionDays}"		
+	if [[ "${_iteration}" == "i"* ]]; then 
+		_fileName="${_fileNamePrefix}-$(_backupNumber ${_retentionDays})";
 
+	elif [[ "${_iterationNumber}" == "0" ]]; then # Backup every run with individual name
+		_fileNamePrefix="${BACKUP_FILENAME_PREFIX}"
+		_fileName="$(date +"${BACKUP_FILENAME}")"	
+	
+	else
+		_fileName="${_fileNamePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
+
+	fi
 	
 	if [[ "${_iteration}" == "i"* ]]; then
 		_execFunctionOrFail "Create incremental backup" "_backupIncremental" "${BACKUP_SOURCES}" "${_fileName}" 
@@ -125,11 +126,11 @@ do
 	fi
 	
 	if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
-		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_filePrefix}*]" "_backupRemoveIncrementalOldest" "${_filePrefix}"
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveIncrementalOldest" "${_fileNamePrefix}"
 	elif [[ "${_retention}" == *"d" ]]; then 
-		_execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionDays}"
+		_execFunctionOrFail "Remove archive backups [prefix: ${_fileNamePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_fileNamePrefix} ${_retentionDays}"
 	else
-		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_filePrefix}*]" "_backupRemoveArchiveOldest" "${_filePrefix} ${_retentionNumber}"
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveArchiveOldest" "${_fileNamePrefix} ${_retentionNumber}"
 	fi
 done
 _influxdbTimeBackedUp="$(date +%s)"
