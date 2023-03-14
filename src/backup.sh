@@ -140,7 +140,7 @@ _execFunction "Post-Upload command" "_backupPostUploadCommand"
 echo "Upload finished"
 
 if [[ "${BACKUP_IMAGES}" == "true" ]]; then
-	 _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX} $(docker image ls -q | tr '\n' ' ')"
+	 _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX} $(docker image ls -q)"
 fi
 
 

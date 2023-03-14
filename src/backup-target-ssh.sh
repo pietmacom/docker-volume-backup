@@ -143,9 +143,11 @@ function _backupImagesEncryptedOnTheFly() {
 
 function _backupImagesOnTheFly() {
 	local _filePrefix="${1}"
-	local _ids="${2}"
+	shift
 	
-	for _id in "${_ids}"
+	local _ids="$@"
+	
+	for _id in ${_ids}
 	do	
 		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}"
 		if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then continue; fi
