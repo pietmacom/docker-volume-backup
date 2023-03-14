@@ -10,15 +10,15 @@ do
 	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
 	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
 	
-	if [[ "${_iteration}" == "i"* ]];
-		then _hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";		
+	if [[ "${_iteration}" == "i"* ]]; then 
+		_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
 		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ];
 			then _hasFunctionOrFail "_backupEncryptedArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupEncryptedArchiveOnTheFly";			
 			else _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";			
 		fi
 	else
-		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ]; then 
+		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ];
 			then _hasFunctionOrFail "_backupEncryptedArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupEncryptedArchive";
 			else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
 		fi
