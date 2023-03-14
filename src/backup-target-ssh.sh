@@ -143,14 +143,18 @@ function _backupImagesEncryptedOnTheFly() {
 
 function _backupImagesOnTheFly() {
 	local _filePrefix="${1}"
-	shift
-	
+	shift	
 	local _ids="$@"
 	
 	for _id in ${_ids}
 	do	
 		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}"
-		if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then continue; fi
+		if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then 
+			echo "Skip: File already backed up [${_remoteFileName}]"
+			continue
+		fi
+		
+		echo "Backing up image ${_id} [${_remoteFileName}]"
 		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
 	done
 }
