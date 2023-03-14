@@ -46,7 +46,7 @@ function _backupArchiveOnTheFly() {
 	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
-function _backupEncryptedArchiveOnTheFly() {
+function _backupArchiveEncryptedOnTheFly() {
 	local _sourcePath="${1}"
 	local _fileName="${2}"
 	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
@@ -83,7 +83,7 @@ function _backupArchive() {
 	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
 }
 
-function _backupEncryptedArchive() {
+function _backupArchiveEncrypted() {
 	local _sourceFile="${1}"
 	local _fileName="${2}"	
 	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
@@ -134,4 +134,27 @@ function _backupRestore() {
 		${SSH_REMOTE} "tar -cf - -C ${SSH_REMOTE_PATH}/${_fileName} ." | tar -xvf - -C ${_targetPath}
 		
 	fi
+}
+
+function _backupImagesEncryptedOnTheFly() {
+	local _ids="${1}"
+	# later
+}
+
+function _backupImagesOnTheFly() {
+	local _filePrefix="${1}"
+	local _ids="${2}"
+	
+	for _id in ${_ids}
+	do	
+		_remoteFileName="${_filePrefix}.tar${BACKUP_COMPRESS_EXTENSION}"
+		if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then continue; fi
+		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
+	done
+}
+
+function _backupRemoveImages() {
+	local _filePrefix="${1}"
+	local _keepIds="${2}"
+	# later
 }

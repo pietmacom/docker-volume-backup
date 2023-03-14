@@ -14,12 +14,12 @@ do
 		_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
 		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
-			then _hasFunctionOrFail "_backupEncryptedArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupEncryptedArchiveOnTheFly";			
+			then _hasFunctionOrFail "_backupArchiveEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncryptedOnTheFly";			
 			else _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";			
 		fi
 	else
 		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
-			then _hasFunctionOrFail "_backupEncryptedArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupEncryptedArchive";
+			then _hasFunctionOrFail "_backupArchiveEncrypted not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncrypted";
 			else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
 		fi
 	fi
@@ -32,6 +32,11 @@ do
 		_hasFunctionOrFail "_backupRemoveArchiveOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOldest"
 	fi
 done
+
+if [[ "${BACKUP_IMAGES}" == "true" ]]; then
+	_hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
+fi
+
 
 # Main Process
 #
@@ -110,13 +115,13 @@ do
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
 		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
-			then _execFunctionOrFail "Create, Encrypt and upload backup in one step (On-The-Fly)" "_backupEncryptedArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
+			then _execFunctionOrFail "Create, Encrypt and upload backup in one step (On-The-Fly)" "_backupArchiveEncryptedOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
 			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		fi		
 	else		
 		tar -cv -C ${BACKUP_SOURCES} . > ${_fileNameArchive} # allow the var to expand, in case we have multiple sources
 		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ]; 
-			then _execFunctionOrFail "Upload encrypted archiv" "_backupEncryptedArchive" "${_fileNameArchive} ${_fileNameArchive}"
+			then _execFunctionOrFail "Upload encrypted archiv" "_backupArchiveEncrypted" "${_fileNameArchive} ${_fileNameArchive}"
 			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive} ${_fileNameArchive}"
 		fi
 		rm ${_fileName}.tar
@@ -133,6 +138,10 @@ done
 _influxdbTimeBackedUp="$(date +%s)"
 _execFunction "Post-Upload command" "_backupPostUploadCommand"
 echo "Upload finished"
+
+if [[ "${BACKUP_IMAGES}" == "true" ]]; then
+	 _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX} $(docker image ls -q)"
+fi
 
 
 _dockerExecLabel "docker-volume-backup.exec-post-backup"
