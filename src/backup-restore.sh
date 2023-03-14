@@ -17,10 +17,12 @@ _hasFunctionOrFail "_backupRestore not Implemented by backup target [${BACKUP_TA
 _info "Cleanup existing volumes"
 echo "Found volumes..."
 ls -1d /backup/*
+echo "Size $(du -sh ${_backupRestorTarget})"
+sleep 3
 
 if ! yes_or_no "Do you want to delete content from existing volumes?"  
 then
-	echo "Volumes must be empty before restore."
+	echo "Volumes must be empty before restore"
 	exit 1
 fi
 
@@ -43,11 +45,11 @@ if [ -S "$DOCKER_SOCK" ]; then
 	_docker stop "${_containersToStop}"
 fi
 find ${_backupRestorTarget} -mindepth 2 -maxdepth 2 -print0 | xargs -0 -I {} rm -v -R {};
+echo "Size $(du -sh ${_backupRestorTarget})"
+sleep 3
 
 _execFunctionOrFail "Restore backup ${_backupName}" "_backupRestore" "${_backupName} ${_backupRestorTarget}"
+echo "Size $(du -sh ${_backupRestorTarget})"
+sleep 3
+
 _docker start "${_containersToStop}"
-
-
-
-
-
