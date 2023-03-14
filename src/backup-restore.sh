@@ -8,7 +8,7 @@ _backupRestorTarget="${2:-${BACKUP_SOURCES}}"
 
 if [[ -z "${_backupName}" ]]; then
 	_hasFunctionOrFail "_backupRestoreListFiles not Implemented by backup target [${BACKUP_TARGET}]" "_backupRestoreListFiles"
-	_execFunctionOrFail "Please pass file from list" "_backupRestoreListFiles" "${BACKUP_PREFIX}"
+	_execFunctionOrFail "Please pass file from list to be restored" "_backupRestoreListFiles" "${BACKUP_PREFIX}"
 	exit 0
 fi
 
