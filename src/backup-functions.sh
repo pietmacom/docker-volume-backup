@@ -237,7 +237,7 @@ function _backupStrategyExplain() {
 	done
 	echo
 	
-	if [[ "${_backupStrategyBackupCount}" == "0" ]]; then return 0; fi # Can't count manualy scheduled backups
+	if [[ "${_backupStrategyBackupCount}" == "0" ]]; then return 0; fi # Can't calculate with 0
 	
 	echo -e "Examples for storage usage for whole period:"
 	for _example in "10" "100" "1024" "10240" "20480" "40960" "81920" "102400"
