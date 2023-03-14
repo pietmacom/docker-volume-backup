@@ -13,12 +13,12 @@ do
 	if [[ "${_iteration}" == "i"* ]]; then 
 		_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
-		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ];
+		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
 			then _hasFunctionOrFail "_backupEncryptedArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupEncryptedArchiveOnTheFly";			
 			else _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";			
 		fi
 	else
-		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ];
+		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
 			then _hasFunctionOrFail "_backupEncryptedArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupEncryptedArchive";
 			else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
 		fi
@@ -94,6 +94,7 @@ do
 		_retentionDays=$(( ${_backupStrategyIterationDays} + ${_retentionNumber} ))
 	fi
 	
+
 	_fileNamePrefix="${BACKUP_FILENAME_PREFIX}-i${_backupStrategyIterationDays}r${_retentionDays}"		
 	if [[ "${_iteration}" == "i"* ]]; then 
 		_fileName="${_fileNamePrefix}-$(_backupNumber ${_retentionDays})";
@@ -106,21 +107,21 @@ do
 		_fileName="${_fileNamePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
 
 	fi
-	
+
+	_fileNameArchive="${_fileName}.tar"	
 	if [[ "${_iteration}" == "i"* ]]; then
 		_execFunctionOrFail "Create incremental backup" "_backupIncremental" "${BACKUP_SOURCES}" "${_fileName}" 
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
-		_fileNameArchive="${_fileName}.tar.gz"
-		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ];
-			then _execFunctionOrFail "Create, Encrypt and upload backup in one step (On-The-Fly)" "_backupEncryptedArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}.gpg"			
+		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
+			then _execFunctionOrFail "Create, Encrypt and upload backup in one step (On-The-Fly)" "_backupEncryptedArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
 			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		fi		
-	else
-		tar -cv -C ${BACKUP_SOURCES} . > ${_fileName}.tar # allow the var to expand, in case we have multiple sources
-		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ]; 
-			then _execFunctionOrFail "Upload encrypted archiv" "_backupEncryptedArchive" "${_fileName}.tar ${_fileName}.tar.gz.gpg"
-			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileName}.tar ${_fileName}.tar.gz"
+	else		
+		tar -cv -C ${BACKUP_SOURCES} . > ${_fileNameArchive} # allow the var to expand, in case we have multiple sources
+		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ]; 
+			then _execFunctionOrFail "Upload encrypted archiv" "_backupEncryptedArchive" "${_fileNameArchive} ${_fileNameArchive}"
+			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive} ${_fileNameArchive}"
 		fi
 		rm ${_fileName}.tar
 	fi

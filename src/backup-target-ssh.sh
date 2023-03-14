@@ -39,19 +39,21 @@ function _backupPostUploadCommand() {
 function _backupArchiveOnTheFly() {
 	local _sourcePath="${1}"
 	local _fileName="${2}"
+	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}"
 	
-	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi	
-	tar -cv -C ${_sourcePath} . | ${BACKUP_PIPE_COMPRESS} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
-	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi	
+	tar -cv -C ${_sourcePath} . | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
+	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
 function _backupEncryptedArchiveOnTheFly() {
 	local _sourcePath="${1}"
 	local _fileName="${2}"
+	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
 	
-	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi	
-	tar -cv -C ${_sourcePath} . | ${BACKUP_PIPE_COMPRESS} | ${BACKUP_PIPE_ENCRYPT} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
-	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi	
+	tar -cv -C ${_sourcePath} . | ${BACKUP_COMPRESS_PIPE} | ${BACKUP_ENCRYPT_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
+	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
 function _backupIncremental() {
@@ -74,18 +76,20 @@ function _backupIncremental() {
 
 function _backupArchive() {
 	local _sourceFile="${1}"
-	local _fileName="${2}"
+	local _fileName="${2}"	
+	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}"
 	
-	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi	
-	cat ${_sourceFile} | ${BACKUP_PIPE_COMPRESS} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi	
+	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
 }
 
 function _backupEncryptedArchive() {
 	local _sourceFile="${1}"
-	local _fileName="${2}"
+	local _fileName="${2}"	
+	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
 	
-	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi
-	cat ${_sourceFile} | ${BACKUP_PIPE_COMPRESS} | ${BACKUP_PIPE_ENCRYPT} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi
+	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${BACKUP_ENCRYPT_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
 }
 
 function _backupRemoveIncrementalOldest() {
@@ -98,14 +102,14 @@ function _backupRemoveArchiveOldest() {
 	local _filePrefix="${1}"
 	local _keepCount="${2}"
 	
-	${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/${_filePrefix}*.tar.gz* | sort -r | tail -n +$(( ${_keepCount} + 1)) | xargs -I {} rm -v -R {}"
+	${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/${_filePrefix}*.tar${BACKUP_COMPRESS_EXTENSION}* | sort -r | tail -n +$(( ${_keepCount} + 1)) | xargs -I {} rm -v -R {}"
 }
 
 function _backupRemoveArchiveOlderThanDays() {
 	local _filePrefix="${1}"
 	local _keepDays="${2}"
 	
-	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*.tar.gz*\" -type f -mtime +$(( ${_keepDays} - 1 )) -print0 | xargs -0 -I {} rm -v -R {}"
+	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*.tar${BACKUP_COMPRESS_EXTENSION}*\" -type f -mtime +$(( ${_keepDays} - 1 )) -print0 | xargs -0 -I {} rm -v -R {}"
 }
 
 function _backupRestoreListFiles() {
@@ -120,11 +124,11 @@ function _backupRestore() {
 	
 	if $SSH_REMOTE -q "[[ ! -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "File does not exist [${_fileName}]" && exit 1; fi
 	
-	if [[ "${_fileName}" == *".tar.gz" ]]; then
-		${SSH_REMOTE} "cat ${SSH_REMOTE_PATH}/${_fileName}" | ${BACKUP_PIPE_DECOMPRESS} | tar -xvf - -C ${_targetPath}
+	if [[ "${_fileName}" == *".tar${BACKUP_COMPRESS_EXTENSION}" ]]; then
+		${SSH_REMOTE} "cat ${SSH_REMOTE_PATH}/${_fileName}" | ${BACKUP_DECOMPRESS_PIPE} | tar -xvf - -C ${_targetPath}
 		
-	elif [[ "${_fileName}" == *".tar.gz.gpg" ]]; then
-		${SSH_REMOTE} "cat ${SSH_REMOTE_PATH}/${_fileName}" | ${BACKUP_PIPE_DECRYPT} | ${BACKUP_PIPE_DECOMPRESS} | tar -xvf - -C ${_targetPath}
+	elif [[ "${_fileName}" == *".tar${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}" ]]; then
+		${SSH_REMOTE} "cat ${SSH_REMOTE_PATH}/${_fileName}" | ${BACKUP_DECRYPT_PIPE} | ${BACKUP_DECOMPRESS_PIPE} | tar -xvf - -C ${_targetPath}
 		
 	else
 		${SSH_REMOTE} "tar -cf - -C ${SSH_REMOTE_PATH}/${_fileName} ." | tar -xvf - -C ${_targetPath}
