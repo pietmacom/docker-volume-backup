@@ -197,11 +197,12 @@ function _backupStrategyExplain() {
 			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
 		fi
 		
-		if [[ -z "${_backupStrategyRetentionDays}" ]];
-			then _backupStrategyRetentionDays="${_retentionNumber}"			
-		elif [[ "${_retention}" == *"d" ]];
-			then _backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
-			else _backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
+		if [[ -z "${_backupStrategyRetentionDays}" ]]; then
+			_backupStrategyRetentionDays="${_retentionNumber}"			
+		elif [[ "${_retention}" == *"d" ]]; then
+			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
+		else 
+			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
 		fi
 
 		echo -n -e "\t${_definition}\t=> Backup "

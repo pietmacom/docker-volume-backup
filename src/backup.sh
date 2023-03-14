@@ -123,11 +123,12 @@ do
 		_filePrefix="${BACKUP_PREFIX}"
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
 	else		
-		if [[ -z "${_backupStrategyRetentionDays}" ]];
-			then _backupStrategyRetentionDays="${_retentionNumber}"			
-		elif [[ "${_retention}" == *"d" ]];
-			then _backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
-			else _backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
+		if [[ -z "${_backupStrategyRetentionDays}" ]]; then
+			_backupStrategyRetentionDays="${_retentionNumber}"			
+		elif [[ "${_retention}" == *"d" ]]; then
+			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
+		else 
+			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
 		fi				
 		_filePrefix="${BACKUP_PREFIX}-${_backupStrategyRetentionDays}"
 		
