@@ -40,13 +40,14 @@ _info "Cleanup existing volumes"
 echo "Found volumes..."
 ls -1d /backup/*
 
-if ! yes_or_no "Do you want to delete content from existing volumes?" && find ${_backupRestorTarget} -mindepth 2 -maxdepth 2 -print0 | xargs -0 -I {} rm -v -R {};
+if ! yes_or_no "Do you want to delete content from existing volumes?"  
 then
 	echo "Volumes must be empty before restore."
-	_docker start ${_containersToStop}
+	_docker start "${_containersToStop}"
 	exit 1
 fi
 
+find ${_backupRestorTarget} -mindepth 2 -maxdepth 2 -print0 | xargs -0 -I {} rm -v -R {};
 _execFunctionOrFail "Restore backup ${_backupName}" "_backupRestore" "${_backupName} ${_backupRestorTarget}"
 _docker start "${_containersToStop}"
 
