@@ -182,7 +182,8 @@ function _backupStrategyExplain() {
 	local _backupStrategyNormalized="$1"
 
 	echo -e "Explained backup strategy:"
-	_backupStrategyIterationDays="1"
+	_backupStrategyIterationDays=""
+	_backupStrategyRetentionDays=""
 	_backupStrategyBackupCount="0"
 	for _definition in ${_backupStrategyNormalized}
 	do
@@ -191,10 +192,16 @@ function _backupStrategyExplain() {
 		_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 		_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 
-		_backupStrategyIterationDays=$((${_backupStrategyIterationDays} * ${_iterationNumber}))
-		_retentionDays="$(( (${_backupStrategyIterationDays} * ${_retentionNumber})))"
-		if [[ "${_retention}" == *"d" ]]; then
-			_retentionDays="${_retentionNumber}";
+		if [[ -z "${_backupStrategyIterationDays}" ]];
+			then _backupStrategyIterationDays="${_iterationNumber}"
+			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
+		fi
+		
+		if [[ -z "${_backupStrategyRetentionDays}" ]];
+			then _backupStrategyRetentionDays="${_retentionNumber}"			
+		elif [[ "${_retention}" == *"d" ]];
+			then _backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
+			else _backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
 		fi
 
 		echo -n -e "\t${_definition}\t=> Backup "
@@ -212,7 +219,7 @@ function _backupStrategyExplain() {
 			echo -n "last ${_retentionNumber} "
 
 		fi
-		echo -n "backups for ${_retentionDays} days "
+		echo -n "backups for ${_backupStrategyRetentionDays} days "
 
 		if [[ "${_iterationNumber}" == "0" ]]; then echo -n -e "\n" && continue; fi # Can't count manualy scheduled backups
 		
