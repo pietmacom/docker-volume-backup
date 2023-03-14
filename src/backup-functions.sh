@@ -192,11 +192,13 @@ function _backupStrategyExplain() {
 		_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 		_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 
+		# _backupStrategyIterationDays
 		if [[ -z "${_backupStrategyIterationDays}" ]];
 			then _backupStrategyIterationDays="${_iterationNumber}"
 			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
 		fi
 		
+		# _backupStrategyRetentionDays
 		if [[ -z "${_backupStrategyRetentionDays}" ]]; then
 			_backupStrategyRetentionDays="${_retentionNumber}"			
 		elif [[ "${_retention}" == *"d" ]]; then

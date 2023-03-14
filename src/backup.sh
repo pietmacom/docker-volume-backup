@@ -122,7 +122,14 @@ do
 	if [[ "${_iterationNumber}" == "0" ]]; then # Manual Backup
 		_filePrefix="${BACKUP_PREFIX}"
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
-	else		
+	else
+		# _backupStrategyIterationDays
+		if [[ -z "${_backupStrategyIterationDays}" ]];
+			then _backupStrategyIterationDays="${_iterationNumber}"
+			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
+		fi
+		
+		# _backupStrategyRetentionDays
 		if [[ -z "${_backupStrategyRetentionDays}" ]]; then
 			_backupStrategyRetentionDays="${_retentionNumber}"			
 		elif [[ "${_retention}" == *"d" ]]; then
@@ -131,11 +138,6 @@ do
 			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
 		fi				
 		_filePrefix="${BACKUP_PREFIX}-${_backupStrategyRetentionDays}"
-		
-		if [[ -z "${_backupStrategyIterationDays}" ]];
-			then _backupStrategyIterationDays="${_iterationNumber}"
-			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
-		fi
 		
 		if [[ "${_iteration}" == "i"* ]];
 			then _fileName="${_filePrefix}-$(_backupNumber ${_retentionNumber})";
