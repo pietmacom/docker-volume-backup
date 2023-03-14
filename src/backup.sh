@@ -93,19 +93,15 @@ do
 	if [[ "${_retention}" == *"d" ]]; then
 		_retentionDays=$(( ${_backupStrategyIterationDays} + ${_retentionNumber} ))
 	fi
-	
 
 	_fileNamePrefix="${BACKUP_FILENAME_PREFIX}-i${_backupStrategyIterationDays}r${_retentionDays}"		
 	if [[ "${_iteration}" == "i"* ]]; then 
 		_fileName="${_fileNamePrefix}-$(_backupNumber ${_retentionDays})";
-
 	elif [[ "${_iterationNumber}" == "0" ]]; then # Backup every run with individual name
 		_fileNamePrefix="${BACKUP_FILENAME_PREFIX}"
-		_fileName="$(date +"${BACKUP_FILENAME}")"	
-	
+		_fileName="$(date +"${BACKUP_FILENAME}")"		
 	else
-		_fileName="${_fileNamePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
-
+		_fileName="${_fileNamePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";		
 	fi
 
 	_fileNameArchive="${_fileName}.tar"	
