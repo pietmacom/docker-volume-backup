@@ -15,9 +15,22 @@ fi
 _hasFunctionOrFail "_backupRestore not Implemented by backup target [${BACKUP_TARGET}]" "_backupRestore"
 
 if [ -S "$DOCKER_SOCK" ]; then
-	_containersThis="$(docker ps --filter status=running --filter name=docker-volume-backup --format '{{.ID}}')"
-	echo ${_containersThis};
-	exit 1
+	_containersThis="$(docker ps --filter status=running --filter name=docker-volume-backup --format '{{.ID}}')"	
+	_containersRunning="$(_dockerContainerFilter "status=running")"
+	_containersToStop=""
+	for _running in ${_containersRunning}
+	do
+		_found=""
+		for _this in ${_containersThis}; do
+			if [[ "${_running}" == "${_this}" ]]; then _found="${_this}" && break; fi
+		done
+		if [[ ! -z "${_found}" ]]; then continue; fi
+		_containersToStop="${_containersToStop}${_running} "	
+	done
+	
+	echo "${_containersThis}"
+	echo "${_containersToStop}"
+	exit
 	_containersToStop="$(_dockerContainerFilter "status=running")"
 	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
