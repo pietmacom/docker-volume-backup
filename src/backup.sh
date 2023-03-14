@@ -140,8 +140,8 @@ do
 		_filePrefix="${BACKUP_PREFIX}-${_backupStrategyRetentionDays}"
 		
 		if [[ "${_iteration}" == "i"* ]];
-			then _fileName="${_filePrefix}-${_backupStrategyIterationDays}-$(_backupNumber ${_retentionNumber})";
-			else _fileName="${_filePrefix}-${_backupStrategyIterationDays}-$(_backupNumber ${_backupStrategyIterationDays})";
+			then _fileName="${_filePrefix}-${_backupStrategyIterationDays}_$(_backupNumber ${_retentionNumber})";
+			else _fileName="${_filePrefix}-${_backupStrategyIterationDays}_$(_backupNumber ${_backupStrategyIterationDays})";
 		fi
 	fi
 	_fileNameArchive="${_fileName}.tar.gz"
