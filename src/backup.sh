@@ -68,7 +68,6 @@ do
 	fi
 done
 
-
 # Main Process
 #
 _backupStrategyExplain "${_backupStrategyNormalized}"
@@ -147,15 +146,15 @@ do
 	_fileNameArchive="${_fileName}.tar.gz"
 	
 	if [[ "${_iteration}" == "i"* ]];
-		then _execFunctionOrFail "Create incremental backup" "_backupIncremental" "${_fileName}" 
+		then _execFunctionOrFail "Create incremental backup" "_backupIncremental" "${BACKUP_SOURCES}" "${_fileName}" 
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]];
-		then _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${_fileNameArchive}"
+		then _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		
 	else
 		tar -czvf "${_fileNameArchive}" -C ${BACKUP_SOURCES} . # allow the var to expand, in case we have multiple sources
-		if [ -z "$GPG_PASSPHRASE" ];
-		then _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}"
+		if [ -z "$GPG_PASSPHRASE" ]; then 
+			_execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}"
 		else
 			_info "Encrypting backup"
 			gpg --symmetric --cipher-algo aes256 --batch --passphrase "$GPG_PASSPHRASE" -o "${_fileNameArchive}.gpg" ${_fileNameArchive}
@@ -190,15 +189,6 @@ sleep "$BACKUP_WAIT_SECONDS"
 
 _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"
-if [[ "${BACKUP_ONTHEFLY}" == "false" ]];
-then
-	_execFunction "Test connection" "_backupTestConnection"
-	_execFunction "Pre-Upload command" "_backupPreUploadCommand"
-	_influxdbTimeUpload="$(date +%s)"
-	_execFunctionOrFail "Upload archive" "_backupArchive"
-	_influxdbTimeUploaded="$(date +%s)"
-	_execFunction "Post-Upload command" "_backupPostUploadCommand"
-fi
 
 _exec "Post-backup command" "$POST_BACKUP_COMMAND"
 
@@ -207,9 +197,7 @@ if [ -f "$BACKUP_FILENAME" ]; then
   rm -vf "$BACKUP_FILENAME"
 fi
 
-
 _execFunction "Remove oldest backups" "_backupRemoveOldest" 3
-
 
 _info "Collecting metrics"
 _influxdbTimeFinish="$(date +%s)"

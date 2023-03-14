@@ -38,22 +38,24 @@ function _backupPostUploadCommand() {
 }
 
 function _backupArchiveOnTheFly() {
-	local _fileName="${1}"
+	local _sourcePath="${1}"
+	local _fileName="${2}"
 	
 	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi
 	
-	tar -zcv -C ${BACKUP_SOURCES} . | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+	tar -zcv -C ${_sourcePath} . | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
 	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
 }
 
 function _backupIncremental() {
-	local _fileName="${1}"
+	local _sourcePath="${1}"
+	local _fileName="${2}"
 	
 	echo "Maintain remote increment backup"
 	${SSH_REMOTE} "mkdir -p ${SSH_REMOTE_PATH}/${_fileName}"		
 	for i in {1..3};
 	do
-		rsync -aviP -e "${SSH}" --stats --delete ${BACKUP_SOURCES}/ $SSH_USER@$SSH_HOST:${SSH_REMOTE_PATH}/${_fileName}
+		rsync -aviP -e "${SSH}" --stats --delete ${_sourcePath}/ $SSH_USER@$SSH_HOST:${SSH_REMOTE_PATH}/${_fileName}
 		if [ $? -eq 0 ]; then break; fi
 		if [ $i -ge 3 ]; then echo "Backup failed after ${i} times" && exit 1; fi
 		_info "Repeat ${i} time due to an error"
@@ -63,7 +65,9 @@ function _backupIncremental() {
 }
 
 function _backupArchive() {
-	scp ${SSH_CONFIG} -P ${SSH_PORT} $BACKUP_FILENAME $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	local _sourceFile="${1}"
+	
+	scp ${SSH_CONFIG} -P ${SSH_PORT} ${_sourceFile} $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
 }
 
 function _backupRemoveIncrementalOldest() {
