@@ -225,7 +225,7 @@ function _backupStrategyExplain() {
 		if [[ "${_iteration}" == "i"* ]]; then
 			_backupsCount="1"
 		elif [[ "${_retention}" == *"d" ]]; then
-			if [[ "${_iterationNumber}" == "0"]]; then continue; fi # Can't predict the number of manualy scheduled backups by days
+			if [[ "${_iterationNumber}" == "0" ]]; then continue; fi # Can't predict the number of manualy scheduled backups by days
 			
 			_backupsCount="$(((${_retentionNumber} / ${_iterationNumber})))"
 			if [[ $((${_retentionNumber} % ${_iterationNumber})) -gt 0 ]]; then $((_backupsCount++)); fi
