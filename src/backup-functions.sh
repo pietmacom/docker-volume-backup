@@ -29,10 +29,10 @@ function _dockerContainerFilter() {
 	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
 	
 	local _filters=""
-	for label in "$@"
+	for filter in "$@"
 	do
-		if [[ -z "${label}" ]]; then continue; fi
-		_filters="${_filters} --filter "${label}""
+		if [[ -z "${filter}" ]]; then continue; fi
+		_filters="${_filters} --filter "${filter}""
 	done
 	
 	if [[ ! -z "${_filters}" ]];
