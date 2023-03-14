@@ -1,13 +1,9 @@
 #!/bin/sh -e
 
-# Write cronjob env to file, fill in sensible defaults, and read them back in
-export BACKUP_STRATEGY="${BACKUP_STRATEGY:-0*10d}"
-export BACKUP_CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-0 9 * * *}"
-env | sed 's/=/="/;s/$/"/' > backup.env
+env | sed 's/=/="/;s/$/"/' > backup.env # Write cronjob env to file, fill in sensible defaults, and read them back in
 
+source backup-environment.sh
 source backup-functions.sh
-_backupStrategyNormalized="$(_backupStrategyNormalize "${BACKUP_STRATEGY}")"
-_cronScheduleNormalized="$(_backupCronNormalize "${BACKUP_STRATEGY}" "${BACKUP_CRON_SCHEDULE}")"
 
 echo -n -e "Normalized backup strategy definition:\n\t${_backupStrategyNormalized}"\
     && if [[ ! "${_backupStrategyNormalized}" == "${BACKUP_STRATEGY}" ]]; then echo -n -e " (given: ${BACKUP_STRATEGY})\n"; else echo -n -e "\n"; fi

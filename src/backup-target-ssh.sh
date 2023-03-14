@@ -40,9 +40,17 @@ function _backupArchiveOnTheFly() {
 	local _sourcePath="${1}"
 	local _fileName="${2}"
 	
-	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi	
+	tar -cv -C ${_sourcePath} . | ${BACKUP_PIPE_COMPRESS} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
+}
+
+function _backupEncryptedArchiveOnTheFly() {
+	local _sourcePath="${1}"
+	local _fileName="${2}"
 	
-	tar -zcv -C ${_sourcePath} . | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi	
+	tar -cv -C ${_sourcePath} . | ${BACKUP_PIPE_COMPRESS} | ${BACKUP_PIPE_ENCRYPT} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
 	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
 }
 
@@ -66,8 +74,18 @@ function _backupIncremental() {
 
 function _backupArchive() {
 	local _sourceFile="${1}"
+	local _fileName="${2}"
 	
-	scp ${SSH_CONFIG} -P ${SSH_PORT} ${_sourceFile} $SSH_USER@$SSH_HOST:$SSH_REMOTE_PATH
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi	
+	cat ${_sourceFile} | ${BACKUP_PIPE_COMPRESS} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
+}
+
+function _backupEncryptedArchive() {
+	local _sourceFile="${1}"
+	local _fileName="${2}"
+	
+	if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "Skip: File already backed up [${_fileName}]" && return 0; fi
+	cat ${_sourceFile} | ${BACKUP_PIPE_COMPRESS} | ${BACKUP_PIPE_ENCRYPT} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_fileName}"
 }
 
 function _backupRemoveIncrementalOldest() {
@@ -80,7 +98,7 @@ function _backupRemoveArchiveOldest() {
 	local _filePrefix="${1}"
 	local _keepCount="${2}"
 	
-	${SSH_REMOTE} "ls -1 ${SSH_REMOTE_PATH}/${_filePrefix}*.tar.gz | sort -r | tail -n +$(( ${_keepCount} + 1)) | xargs -I {} rm -v -R {}"
+	${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/${_filePrefix}*.tar.gz | sort -r | tail -n +$(( ${_keepCount} + 1)) | xargs -I {} rm -v -R {}"
 }
 
 function _backupRemoveArchiveOlderThanDays() {
@@ -88,4 +106,18 @@ function _backupRemoveArchiveOlderThanDays() {
 	local _keepDays="${2}"
 	
 	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*.tar.gz\" -type f -mtime +$(( ${_keepDays} - 1 )) -print0 | xargs -0 -I {} rm -v -R {}"
+}
+
+function _backupRestoreListFiles() {
+	local _filePrefix="${1}"
+	
+	${SSH_REMOTE} "ls -1ldh ${_filePrefix}*"
+}
+
+function _backupRestore() {
+	local _fileName="${1}"
+	local _targetPath="${2}"
+	
+	if $SSH_REMOTE -q "[[ ! -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "File does not exist [${_fileName}]" && exit 1; fi	
+	${SSH_REMOTE} "tar -cf - -C ${SSH_REMOTE_PATH} ." | tar -xvf - -C ${_targetPath}
 }
