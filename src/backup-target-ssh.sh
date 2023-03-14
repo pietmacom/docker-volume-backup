@@ -147,7 +147,7 @@ function _backupImagesOnTheFly() {
 	
 	for _id in ${_ids}
 	do	
-		_remoteFileName="${_filePrefix}.tar${BACKUP_COMPRESS_EXTENSION}"
+		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}"
 		if $SSH_REMOTE -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then continue; fi
 		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
 	done
