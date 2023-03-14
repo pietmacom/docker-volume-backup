@@ -15,6 +15,9 @@ fi
 _hasFunctionOrFail "_backupRestore not Implemented by backup target [${BACKUP_TARGET}]" "_backupRestore"
 
 if [ -S "$DOCKER_SOCK" ]; then
+	_containersThis="$(_dockerContainerFilter "status=running" "reference=*/docker-volume-backup/*")"
+	echo ${_containersThis};
+	exit 1
 	_containersToStop="$(_dockerContainerFilter "status=running")"
 	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
@@ -25,6 +28,10 @@ if [ -S "$DOCKER_SOCK" ]; then
 fi
 
 _info "Cleanup existing volumes"
+
+echo "Found volumes..."
+ls -1d /backup/*
+
 if ! yes_or_no "Do you want to delete content from existing volumes?" && find ${_backupRestorTarget} -mindepth 2 -maxdepth 2 -print0 | xargs -0 -I {} rm -v -R {};
 then
 	echo "Volumes must be empty before restore."
