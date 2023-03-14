@@ -64,7 +64,7 @@ function _docker(){
 	if [[  -z "${_ids}"  ]]; then return 0; fi
 
 	_info "${_action} containers"
-	docker ${_action} "${_ids}"
+	docker ${_action} ${_ids}
 }
 
 function _dockerExecLabel() {

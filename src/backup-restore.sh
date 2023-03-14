@@ -28,16 +28,11 @@ if [ -S "$DOCKER_SOCK" ]; then
 		_containersToStop="${_containersToStop}${_running} "	
 	done
 	
-	echo "${_containersThis}"
-	echo "${_containersToStop}"
-	exit
-	_containersToStop="$(_dockerContainerFilter "status=running")"
-	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
-
+	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
 	echo "$_containersCount containers running on host in total"
 	echo "$_containersToStopCount containers to be stopped during restore"
-	_docker stop ${_containersToStop}
+	_docker stop "${_containersToStop}"
 fi
 
 _info "Cleanup existing volumes"
@@ -53,7 +48,7 @@ then
 fi
 
 _execFunctionOrFail "Restore backup ${_backupName}" "_backupRestore" "${_backupName} ${_backupRestorTarget}"
-_docker start ${_containersToStop}
+_docker start "${_containersToStop}"
 
 
 

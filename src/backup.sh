@@ -55,7 +55,7 @@ _info "Backup starting"
 _influxdbTimeStart="$(date +%s)"
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_dockerContainerFilter "status=running" "label=docker-volume-backup.stop-during-backup=true" "${BACKUP_CUSTOM_LABEL}")"
-	_containersToStopCount="$(echo ${_containersToStop} | wc -l)"
+	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
 
 	echo "$_containersCount containers running on host in total"
@@ -66,7 +66,7 @@ else
   echo "Cannot access \"$DOCKER_SOCK\", won't look for containers to stop"
 fi
 
-_docker stop ${_containersToStop}
+_docker stop "${_containersToStop}"
 _dockerExecLabel "docker-volume-backup.exec-pre-backup"
 _exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
 
@@ -138,7 +138,7 @@ echo "Upload finished"
 
 
 _dockerExecLabel "docker-volume-backup.exec-post-backup"
-_docker start ${_containersToStop}
+_docker start "${_containersToStop}"
 
 _info "Waiting before processing"
 echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
