@@ -13,7 +13,8 @@ if [[ -z "${_backupName}" ]]; then
 fi
 
 if [[ ! "${_backupName}" == "${BACKUP_FILENAME_PREFIX}"* ]]; then
-	_error "Filename [${_backupName}] does not match valid prefix [${_backupName}]"
+	_error "Filename [${_backupName}] does not match valid prefix [${BACKUP_FILENAME_PREFIX}]"
+	exit 1
 fi
 
 _hasFunctionOrFail "_backupRestore not Implemented by backup target [${BACKUP_TARGET}]" "_backupRestore"
