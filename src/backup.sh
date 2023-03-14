@@ -135,7 +135,7 @@ do
 	else
 		_filePrefix="${BACKUP_PREFIX}-i${_backupStrategyIterationDays}r${_retentionDays}"		
 		if [[ "${_iteration}" == "i"* ]];
-			then _fileName="${_filePrefix}-$(_backupNumber ${_retentionNumber})";
+			then _fileName="${_filePrefix}-$(_backupNumber ${_retentionDays})";
 			else _fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
 		fi
 	fi
