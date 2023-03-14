@@ -27,11 +27,8 @@ if [ -S "$DOCKER_SOCK" ]; then
 		if [[ ! -z "${_found}" ]]; then continue; fi
 		_containersToStop="${_containersToStop}${_running} "	
 	done
-	
-	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
-	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
-	echo "$_containersCount containers running on host in total"
-	echo "$_containersToStopCount containers to be stopped during restore"
+	echo "$(docker ps --format "{{.ID}}" | wc -l) containers running on host in total"
+	echo "$(echo "${_containersToStop}" | wc -w) containers to be stopped during restore"
 	_docker stop "${_containersToStop}"
 fi
 
