@@ -153,9 +153,7 @@ function _backupStrategyNormalize() {
 	do
 		if [[ ! "${_definition}" =~ ${BACKUP_DEFINITION} ]];
 		then
-			_error "Strategy definition incorrect [${_definition}]."
-			_error "Allowed defintions:"
-			for _example in "1" "1*7" "1*7d" "i1" "i1*7" "i1*7d"; do _error "\t${_example}"; done
+			_error "Strategy definition incorrect [${_definition}].\nAllowed defintions:\n\t1\n\t1*7\n\t1*7d\n\ti1\n\ti1*7\n\ti1*7d"
 			exit 1
 		fi
 
@@ -183,7 +181,6 @@ function _backupStrategyExplain() {
 
 	echo -e "Explained backup strategy:"
 	_backupStrategyIterationDays=""
-	_backupStrategyRetentionDays=""
 	_backupStrategyBackupCount="0"
 	for _definition in ${_backupStrategyNormalized}
 	do
@@ -198,15 +195,12 @@ function _backupStrategyExplain() {
 			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
 		fi
 		
-		# _backupStrategyRetentionDays
-		if [[ -z "${_backupStrategyRetentionDays}" ]]; then
-			_backupStrategyRetentionDays="${_retentionNumber}"			
-		elif [[ "${_retention}" == *"d" ]]; then
-			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
-		else 
-			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
+		# _retentionDays - Always individual per definition
+		_retentionDays="$(( ${_backupStrategyIterationDays} * ${_retentionNumber} ))"
+		if [[ "${_retention}" == *"d" ]]; then
+			_retentionDays=$(( ${_backupStrategyIterationDays} + ${_retentionNumber} ))
 		fi
-
+		
 		echo -n -e "\t${_definition}\t=> Backup "
 		if [[ "${_iteration}" == "i"* ]]; then
 			echo -n "- changes - ";
@@ -222,7 +216,7 @@ function _backupStrategyExplain() {
 			echo -n "last ${_retentionNumber} "
 
 		fi
-		echo -n "backups for ${_backupStrategyRetentionDays} days "
+		echo -n "backups for ${_retentionDays} days "
 
 		if [[ "${_iterationNumber}" == "0" ]]; then echo -n -e "\n" && continue; fi # Can't count manualy scheduled backups
 		

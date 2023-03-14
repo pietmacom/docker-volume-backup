@@ -110,7 +110,6 @@ _execFunction "Pre-Upload command" "_backupPreUploadCommand"
 _influxdbTimeBackup="$(date +%s)"
 
 _backupStrategyIterationDays=""
-_backupStrategyRetentionDays=""
 for _definition in ${_backupStrategyNormalized}
 do
 	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
@@ -118,26 +117,23 @@ do
 	_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 	_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 	
-	if [[ "${_iterationNumber}" == "0" ]]; then # Manual Backup
+	# _backupStrategyIterationDays
+	if [[ -z "${_backupStrategyIterationDays}" ]];
+		then _backupStrategyIterationDays="${_iterationNumber}"
+		else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
+	fi
+	
+	# _retentionDays - Always individual per definition
+	_retentionDays="$(( ${_backupStrategyIterationDays} * ${_retentionNumber} ))"
+	if [[ "${_retention}" == *"d" ]]; then
+		_retentionDays=$(( ${_backupStrategyIterationDays} + ${_retentionNumber} ))
+	fi
+	
+	if [[ "${_iterationNumber}" == "0" ]]; then # Backup every run
 		_filePrefix="${BACKUP_PREFIX}"
 		_fileName="${_filePrefix}-$(date +'%Y-%m-%dT%H-%M-%S')"
 	else
-		# _backupStrategyIterationDays
-		if [[ -z "${_backupStrategyIterationDays}" ]];
-			then _backupStrategyIterationDays="${_iterationNumber}"
-			else _backupStrategyIterationDays="$(( ${_backupStrategyIterationDays} * ${_iterationNumber} ))"
-		fi
-		
-		# _backupStrategyRetentionDays
-		if [[ -z "${_backupStrategyRetentionDays}" ]]; then
-			_backupStrategyRetentionDays="${_retentionNumber}"			
-		elif [[ "${_retention}" == *"d" ]]; then
-			_backupStrategyRetentionDays=$(( ${_backupStrategyRetentionDays} + ${_retentionNumber} ))
-		else 
-			_backupStrategyRetentionDays="$(( ${_backupStrategyRetentionDays} * ${_retentionNumber} ))"			
-		fi				
-		_filePrefix="${BACKUP_PREFIX}-i${_backupStrategyIterationDays}r${_backupStrategyRetentionDays}"
-		
+		_filePrefix="${BACKUP_PREFIX}-i${_backupStrategyIterationDays}r${_retentionDays}"		
 		if [[ "${_iteration}" == "i"* ]];
 			then _fileName="${_filePrefix}-$(_backupNumber ${_retentionNumber})";
 			else _fileName="${_filePrefix}-$(_backupNumber ${_backupStrategyIterationDays})";
@@ -165,8 +161,8 @@ do
 	
 	if [[ "${_retention}" == *"d" ]]; then 
 		if [[ "${_iteration}" == "i"* ]];
-			then _execFunctionOrFail "Remove incremental backups [prefix: ${_filePrefix}*] older than ${_backupStrategyRetentionDays} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_backupStrategyRetentionDays}";
-			else _execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_backupStrategyRetentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_backupStrategyRetentionDays}";
+			then _execFunctionOrFail "Remove incremental backups [prefix: ${_filePrefix}*] older than ${_retentionDays} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_retentionDays}";
+			else _execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionDays}";
 		fi
 	else
 		if [[ "${_iteration}" == "i"* ]];
