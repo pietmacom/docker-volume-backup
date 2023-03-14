@@ -117,7 +117,7 @@ do
 		fi		
 	else
 		tar -cv -C ${BACKUP_SOURCES} . > ${_fileName}.tar # allow the var to expand, in case we have multiple sources
-		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ]; then 
+		if [ ! -z "$BACKUP_ENCRYPTION_PASSPHRASE" ]; 
 			then _execFunctionOrFail "Upload encrypted archiv" "_backupEncryptedArchive" "${_fileName}.tar ${_fileName}.tar.gz.gpg"
 			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileName}.tar ${_fileName}.tar.gz"
 		fi

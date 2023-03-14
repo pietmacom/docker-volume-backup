@@ -111,13 +111,23 @@ function _backupRemoveArchiveOlderThanDays() {
 function _backupRestoreListFiles() {
 	local _filePrefix="${1}"
 	
-	${SSH_REMOTE} "ls -1ldh ${_filePrefix}*"
+	${SSH_REMOTE} "cd ${SSH_REMOTE_PATH} && ls -1ldh ${_filePrefix}* | sort -k9,9"
 }
 
 function _backupRestore() {
 	local _fileName="${1}"
 	local _targetPath="${2}"
 	
-	if $SSH_REMOTE -q "[[ ! -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "File does not exist [${_fileName}]" && exit 1; fi	
-	${SSH_REMOTE} "tar -cf - -C ${SSH_REMOTE_PATH} ." | tar -xvf - -C ${_targetPath}
+	if $SSH_REMOTE -q "[[ ! -e ${SSH_REMOTE_PATH}/${_fileName} ]]"; then echo "File does not exist [${_fileName}]" && exit 1; fi
+	
+	if [[ "${_fileName}" == *".tar.gz" ]]; then
+		${SSH_REMOTE} "cat ${SSH_REMOTE_PATH}/${_fileName}" | ${BACKUP_PIPE_DECOMPRESS} | tar -xvf - -C ${_targetPath}
+		
+	elif [[ "${_fileName}" == *".tar.gz.gpg" ]]; then
+		${SSH_REMOTE} "cat ${SSH_REMOTE_PATH}/${_fileName}" | ${BACKUP_PIPE_DECRYPT} | ${BACKUP_PIPE_DECOMPRESS} | tar -xvf - -C ${_targetPath}
+		
+	else
+		${SSH_REMOTE} "tar -cf - -C ${SSH_REMOTE_PATH}/${_fileName} ." | tar -xvf - -C ${_targetPath}
+		
+	fi
 }
