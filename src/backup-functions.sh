@@ -208,8 +208,8 @@ function _backupStrategyExplain() {
 			echo -n "- changes - ";
 		fi
 
-		if [[ "${_iterationNumber}" == "0" ]];
-			then echo -n "every run "
+		if [[ "${_iterationNumber}" == "0" ]]; 
+			then echo -n "every run " # manualy scheduled backups
 			else echo -n "every ${_backupStrategyIterationDays}. days "
 		fi
 
@@ -217,14 +217,16 @@ function _backupStrategyExplain() {
 		if [[ ! "${_retention}" == *"d" ]]; then
 			echo -n "last ${_retentionNumber} "
 		fi
-		echo -n "backups for ${_retentionDays} days "
-
-		if [[ "${_iterationNumber}" == "0" ]]; then echo -n -e "\n" && continue; fi # Can't predict the number of manualy scheduled backups
+		if [[ ! "${_retentionDays}" == "0" ]]; then # manualy scheduled backups retain by days or a number of files
+			echo -n "backups for ${_retentionDays} days "
+		fi
 		
 		local _backupsCount="0"
 		if [[ "${_iteration}" == "i"* ]]; then
 			_backupsCount="1"
 		elif [[ "${_retention}" == *"d" ]]; then
+			if [[ "${_iterationNumber}" == "0"]]; then continue; fi # Can't predict the number of manualy scheduled backups by days
+			
 			_backupsCount="$(((${_retentionNumber} / ${_iterationNumber})))"
 			if [[ $((${_retentionNumber} % ${_iterationNumber})) -gt 0 ]]; then $((_backupsCount++)); fi
 		else
@@ -262,7 +264,6 @@ function _backupStrategyExplain() {
 function _backupCronNormalize() {
 	local _backupStrategyNormalized="$1"
 	local _cronSchedule="$2"
-
 	
 	local _cronNormalized="$(echo "${_cronSchedule}" | tr '\t' ' '| sed "s|[ ][ ]*| |g")"
 	if [[ ! "${_cronNormalized}" == *" * * *" ]] \

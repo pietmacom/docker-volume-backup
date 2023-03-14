@@ -25,7 +25,6 @@ function _backupPreUploadCommand() {
 		echo "Pre-SSH command: $PRE_SSH_COMMAND"
 		${SSH_REMOTE} $PRE_SSH_COMMAND
 	fi
-	
 	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT$SSH_REMOTE_PATH"
 }
 
@@ -61,6 +60,7 @@ function _backupIncremental() {
 		_info "Repeat ${i} time due to an error"
 		sleep 30
 	done
+	$SSH_REMOTE "touch ${SSH_REMOTE_PATH}/${_fileName}" # make last action visible
 	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_backupIncrementalDirectoryName} | cut -f1")"
 }
 
@@ -72,40 +72,20 @@ function _backupArchive() {
 
 function _backupRemoveIncrementalOldest() {
 	local _filePrefix="${1}"
-	local _count="${2}"
 	
-	echo "_backupRemoveIncrementalOldest"
-}
-
-function _backupRemoveIncrementalOlderThanDays() {
-	local _filePrefix="${1}"
-	local _days="${2}"
-	
-	echo "_backupRemoveIncrementalOlderThanDays"
+	${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/${_filePrefix}*/ | sort -r | tail -n +2 | xargs -I {} rm -v -R {}"
 }
 
 function _backupRemoveArchiveOldest() {
 	local _filePrefix="${1}"
-	local _count="${2}"
+	local _keepCount="${2}"
 	
-	echo "_backupRemoveArchiveOldest"
+	${SSH_REMOTE} "ls -1 ${SSH_REMOTE_PATH}/${_filePrefix}*.tar.gz | sort -r | tail -n +$(( ${_keepCount} + 1)) | xargs -I {} rm -v -R {}"
 }
 
 function _backupRemoveArchiveOlderThanDays() {
 	local _filePrefix="${1}"
-	local _days="${2}"
+	local _keepDays="${2}"
 	
-	echo "_backupRemoveArchiveOlderThanDays"
+	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*.tar.gz\" -type f -mtime +$(( ${_keepDays} - 1 )) -print0 | xargs -0 -I {} rm -v -R {}"
 }
-
-#function _backupRemoveOldest() {
-#	local _keepcount="${1}"
-#	_info "Delete last increment backups..."
-#   echo "Delete last increment backups."
-#    ${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/*/ | sort -r | tail -n +2 | xargs -I {} rm -R {}"
-#	
-#	_info "Delete old (keep ${_keepcount}) backups..."
-#	echo "Delete old (keep ${_keepcount}) backups."
-#	${SSH_REMOTE} "ls -1 ${SSH_REMOTE_PATH}/*.tar.gz | sort -r | tail -n +$(expr $_keepcount + 1) | xargs -I {} rm -R {}"
-#}
-

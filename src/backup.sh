@@ -159,16 +159,13 @@ do
 		fi
 	fi
 	
-	if [[ "${_retention}" == *"d" ]]; then 
-		if [[ "${_iteration}" == "i"* ]];
-			then _execFunctionOrFail "Remove incremental backups [prefix: ${_filePrefix}*] older than ${_retentionDays} days" "_backupRemoveIncrementalOlderThanDays" "${_filePrefix} ${_retentionDays}";
-			else _execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionDays}";
-		fi
+	
+	if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_filePrefix}*]" "_backupRemoveIncrementalOldest" "${_filePrefix}";
+	elif [[ "${_retention}" == *"d" ]]; then 
+		_execFunctionOrFail "Remove archive backups [prefix: ${_filePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_filePrefix} ${_retentionDays}";
 	else
-		if [[ "${_iteration}" == "i"* ]];
-			then _execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_filePrefix}*]" "_backupRemoveIncrementalOldest" "${_filePrefix} ${_retentionNumber}";
-			else _execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_filePrefix}*]" "_backupRemoveArchiveOldest" "${_filePrefix} ${_retentionNumber}";
-		fi
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_filePrefix}*]" "_backupRemoveArchiveOldest" "${_filePrefix} ${_retentionNumber}";
 	fi
 done
 _influxdbTimeBackedUp="$(date +%s)"
