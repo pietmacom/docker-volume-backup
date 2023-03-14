@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
-source backup-environment.sh # Cronjobs don't inherit their env, so load from file
 source backup-functions.sh
+source backup-environment.sh # Cronjobs don't inherit their env, so load from file
 
 # Target: Check Availability Of Functions
 #

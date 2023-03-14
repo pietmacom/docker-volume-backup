@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
-source backup-environment.sh
 source backup-functions.sh
+source backup-environment.sh
 
 _backupName="${1}"
 
