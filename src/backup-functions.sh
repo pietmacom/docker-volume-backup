@@ -14,6 +14,17 @@ function _error {
   echo -e "\n$bold[ERROR] $@$reset\n" 1>&2
 }
 
+function yes_or_no {
+    while true; do
+        read -p "$* [y/n]: " yn
+        case $yn in
+            [Yy]*) return 0  ;;
+            [Nn]*) echo "Aborted" ; return  1 ;;
+        esac
+    done
+}
+
+
 function _dockerContainerFilter() {
 	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
 	
