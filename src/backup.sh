@@ -34,7 +34,11 @@ do
 done
 
 if [[ "${BACKUP_IMAGES}" == "true" ]]; then
-	_hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
+	if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
+		then _hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
+		else _hasFunctionOrFail "_backupImagesEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesEncryptedOnTheFly"
+	fi
+	_hasFunctionOrFail "_backupRemoveImages not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveImages"
 fi
 
 
@@ -115,7 +119,7 @@ do
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
 		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
-			then _execFunctionOrFail "Create, Encrypt and upload backup in one step (On-The-Fly)" "_backupArchiveEncryptedOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
+			then _execFunctionOrFail "Create, encrypt and upload backup in one step (On-The-Fly)" "_backupArchiveEncryptedOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
 			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		fi		
 	else		
@@ -140,7 +144,11 @@ _execFunction "Post-Upload command" "_backupPostUploadCommand"
 echo "Upload finished"
 
 if [[ "${BACKUP_IMAGES}" == "true" ]]; then
-	 _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+	if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
+		then _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+		else _execFunctionOrFail "Create, encrypt and upload images in one step (On-The-Fly)" "_backupImagesEncryptedOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+	fi
+	 _execFunctionOrFail "Remove unused images" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 fi
 
 
