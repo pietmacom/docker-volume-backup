@@ -2,14 +2,15 @@
 
 ## General
  - Explains set backup procedure
- - Validates set backup procedure before first run
+ - Validates set backup procedure
  - Send metrics to InfluxDB
  - Override compression (Pipe + Extension)
  - Override encryption (Pipe + Extension)
  - Override backup target (@see backup-target-ssh.sh)
+ - Prefixed environment variables
  
 ## Backup
- - Support Backup by strategy (no lacks)
+ - Support Backup by strategy (@see https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien)
  - Support Simple backup
  - Support Rotate backup-Files
  - Iterative Backups
@@ -23,5 +24,44 @@
 	 - 
  
  
-# Restore
+## Restore
  - On-The-Fly Restore
+ 
+##  Environment (defaults)
+ - DOCKER_SOCK="/var/run/docker.sock"
+ - BACKUP_TARGET="ssh"
+ - BACKUP_CRON_SCHEDULE="0 9 * * *" 
+ - BACKUP_STRATEGY="0*10d"
+ - BACKUP_ONTHEFLY="true"
+ - BACKUP_FILENAME_PREFIX="backup-volume"
+ - BACKUP_FILENAME="${BACKUP_FILENAME_PREFIX}-%Y-%m-%dT%H-%M-%S"
+ - BACKUP_ENCRYPT_PASSPHRASE="" 
+ - BACKUP_IMAGES="false"
+ - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
+ - INFLUXDB_URL=""
+ - INFLUXDB_DB=""
+ - INFLUXDB_CREDENTIALS=""
+ - INFLUXDB_MEASUREMENT="docker_volume_backup"
+
+### BACKUP_TARGET="ssh"
+
+ - PRE_SSH_COMMAND=""
+ - POST_SSH_COMMAND=""
+ - SSH_HOST=""
+ - SSH_PORT="22"
+ - SSH_USER=""
+ - SSH_REMOTE_PATH="."
+ 
+### BACKUP_TARGET="filesystem"
+
+ - BACKUP_FILESYSTEM_PATH="/archive"
+
+### For override
+
+ - BACKUP_COMPRESS_EXTENSION=".gz"
+ - BACKUP_COMPRESS_PIPE="gzip"
+ - BACKUP_DECOMPRESS_PIPE="gzip -d"
+ - BACKUP_ENCRYPT_EXTENSION=".gpg"
+ - BACKUP_ENCRYPT_PIPE="gpg --symmetric --cipher-algo aes256 --batch --passphrase \"${BACKUP_ENCRYPT_PASSPHRASE}\""
+ - BACKUP_DECRYPT_PIPE="gpg --decrypt --batch --passphrase \"${BACKUP_ENCRYPT_PASSPHRASE}\""
+ - BACKUP_SOURCES="${BACKUP_SOURCES:-/backup}"

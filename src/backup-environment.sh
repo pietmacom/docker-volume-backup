@@ -2,12 +2,13 @@
 
 source backup.env # Cronjobs don't inherit their env, so load from file
 
-DOCKER_SOCK="/var/run/docker.sock"
-BACKUP_TARGET="${BACKUP_TARGET:-ssh}"
+
 
 PRE_BACKUP_COMMAND="${PRE_BACKUP_COMMAND:-}"
 POST_BACKUP_COMMAND="${POST_BACKUP_COMMAND:-}"
 
+DOCKER_SOCK="/var/run/docker.sock"
+BACKUP_TARGET="${BACKUP_TARGET:-ssh}"
 BACKUP_CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-0 9 * * *}"
 BACKUP_ONTHEFLY="${BACKUP_ONTHEFLY:-true}"
 BACKUP_STRATEGY="${BACKUP_STRATEGY:-0*10d}"
