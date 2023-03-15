@@ -205,7 +205,7 @@ function _backupStrategyValidate() {
 		fi
 
 		if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
-			_hasFunctionOrFail "_backupRemoveIncrementalOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalOldest"		
+			_hasFunctionOrFail "_backupRemoveIncrementalPrevious not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalPrevious"		
 		elif [[ "${_retention}" == *"d" ]]; then 
 			_hasFunctionOrFail "_backupRemoveArchiveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOlderThanDays"
 		else

@@ -94,7 +94,7 @@ function _backupArchiveEncrypted() {
 	_metaBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
-function _backupRemoveIncrementalOldest() {
+function _backupRemoveIncrementalPrevious() {
 	local _filePrefix="${1}"
 	
 	${SSH_REMOTE} "ls -1d ${SSH_REMOTE_PATH}/${_filePrefix}*/ | sort -r | tail -n +2 | xargs -I {} rm -v -R {}"

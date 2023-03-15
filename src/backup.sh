@@ -24,7 +24,7 @@ if [ "${CHECK_HOST}" != "false" ]; then
   fi
 fi
 
-_info "Start Backup"
+_info "Start backup"
 _metaBackupStart="$(date +%s)"
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_dockerContainerFilter "status=running" "label=docker-volume-backup.stop-during-backup=true" "${BACKUP_CUSTOM_LABEL}")"
@@ -104,7 +104,7 @@ for _definition in ${_backupStrategyNormalized}; do
 	fi
 	
 	if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
-		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [${_fileNamePrefix}*]" "_backupRemoveIncrementalOldest" "${_fileNamePrefix}"
+		_execFunctionOrFail "Remove previous incremental backups" "_backupRemoveIncrementalPrevious" "${_fileNamePrefix}"
 	elif [[ "${_retention}" == *"d" ]]; then 
 		_execFunctionOrFail "Remove archive backups [${_fileNamePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_fileNamePrefix}" "${_retentionDays}"
 	else
