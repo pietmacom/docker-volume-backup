@@ -12,7 +12,7 @@ SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
 function _backupTestConnection() {
-	if [[ -z "$SSH_HOST" ]];
+	if [[ -z "${SSH_HOST}" ]];
 		then echo "SSH_HOST not set" && exit 1;fi
 		
 	echo -n "Test Connection... " && \
@@ -25,7 +25,7 @@ function _backupPreUploadCommand() {
 		echo "Pre-SSH command: $PRE_SSH_COMMAND"
 		${SSH_REMOTE} ${PRE_SSH_COMMAND}
 	fi
-	echo "Will upload to $SSH_USER@$SSH_HOST:$SSH_PORT$SSH_REMOTE_PATH"
+	echo "Will upload to ${SSH_USER}@${SSH_HOST}:${SSH_PORT}${SSH_REMOTE_PATH}"
 }
 
 function _backupPostUploadCommand() {
@@ -43,7 +43,7 @@ function _backupArchiveOnTheFly() {
 	
 	if ${SSH_REMOTE} -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi	
 	tar -cv -C ${_sourcePath} . | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
-	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
+	_metaBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
 function _backupArchiveEncryptedOnTheFly() {
@@ -53,13 +53,13 @@ function _backupArchiveEncryptedOnTheFly() {
 	
 	if ${SSH_REMOTE} -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi	
 	tar -cv -C ${_sourcePath} . | ${BACKUP_COMPRESS_PIPE} | ${BACKUP_ENCRYPT_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
-	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
+	_metaBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
 function _backupIncremental() {
 	local _sourcePath="${1}"
 	local _fileName="${2}"
-	
+		
 	echo "Maintain remote increment backup"
 	${SSH_REMOTE} "mkdir -p ${SSH_REMOTE_PATH}/${_fileName}"		
 	for i in {1..3};
@@ -71,7 +71,7 @@ function _backupIncremental() {
 		sleep 30
 	done
 	${SSH_REMOTE} "touch ${SSH_REMOTE_PATH}/${_fileName}" # make last action visible
-	_influxdbBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_backupIncrementalDirectoryName} | cut -f1")"
+	_metaBackupSize="$(${SSH_REMOTE} "du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1")"
 }
 
 function _backupArchive() {
@@ -81,6 +81,7 @@ function _backupArchive() {
 	
 	if ${SSH_REMOTE} -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi	
 	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
+	_metaBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
 function _backupArchiveEncrypted() {
@@ -90,6 +91,7 @@ function _backupArchiveEncrypted() {
 	
 	if ${SSH_REMOTE} -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi
 	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${BACKUP_ENCRYPT_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
+	_metaBackupSize="$($SSH_REMOTE "du -bs ${SSH_REMOTE_PATH}/${_remoteFileName} | cut -f1")"
 }
 
 function _backupRemoveIncrementalOldest() {
@@ -137,17 +139,13 @@ function _backupRestore() {
 }
 
 function _backupImagesEncryptedOnTheFly() {
-	local _filePrefix="${1}"
-	shift	
+	local _filePrefix="${1}" && shift	
 	local _ids="$@"
 	
-	for _id in ${_ids}
-	do	
+	local _remoteBackupImages="$(${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" -type f")" # Speedup skipping
+	for _id in ${_ids}; do	
 		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
-		if ${SSH_REMOTE} -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then 
-			echo "Skip: Image [${_id}] already backed up [${_remoteFileName}]"
-			continue
-		fi
+		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then continue; fi  # Skip when found
 		
 		echo "Backing up image [${_id}] [${_remoteFileName}]"
 		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} |  ${BACKUP_ENCRYPT_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
@@ -155,17 +153,13 @@ function _backupImagesEncryptedOnTheFly() {
 }
 
 function _backupImagesOnTheFly() {
-	local _filePrefix="${1}"
-	shift	
+	local _filePrefix="${1}" && shift
 	local _ids="$@"
 	
-	for _id in ${_ids}
-	do	
+	local _remoteBackupImages="$(${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" -type f")" # Speedup skipping
+	for _id in ${_ids}; do	
 		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}"
-		if ${SSH_REMOTE} -q "[[ -e ${SSH_REMOTE_PATH}/${_remoteFileName} ]]"; then 
-			echo "Skip: Image [${_id}] already backed up [${_remoteFileName}]"
-			continue
-		fi
+		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then continue; fi # Skip when found
 		
 		echo "Backing up image [${_id}] [${_remoteFileName}]"
 		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
@@ -173,14 +167,12 @@ function _backupImagesOnTheFly() {
 }
 
 function _backupRemoveImages() {
-	local _filePrefix="${1}"
-	shift	
+	local _filePrefix="${1}" && shift	
 	local _keepIds="$@"
 	
-	local _keepFiles=""
+	local _dontRemove=""
 	for _id in ${_keepIds}; do
-		_keepFiles="${_keepFiles} -not -name \"${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}*\" ";
+		_dontRemove="${_dontRemove} -not -name \"${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}*\" ";
 	done
-
-	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" ${_keepFiles} -type f"
+	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" ${_dontRemove} -type f -print0 | xargs -0 -I {} rm -v -R {}"
 }

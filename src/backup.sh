@@ -5,8 +5,7 @@ source backup-environment.sh # Cronjobs don't inherit their env, so load from fi
 
 # Target: Check Availability Of Functions
 #
-for _definition in ${_backupStrategyNormalized}
-do
+for _definition in ${_backupStrategyNormalized}; do
 	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
 	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
 	
@@ -61,7 +60,7 @@ if [ "${CHECK_HOST}" != "false" ]; then
 fi
 
 _info "Backup starting"
-_influxdbTimeStart="$(date +%s)"
+_metaBackupStart="$(date +%s)"
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_dockerContainerFilter "status=running" "label=docker-volume-backup.stop-during-backup=true" "${BACKUP_CUSTOM_LABEL}")"
 	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
@@ -81,11 +80,16 @@ _exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
 
 _execFunction "Test connection" "_backupTestConnection"
 _execFunction "Pre-Upload command" "_backupPreUploadCommand"
-_influxdbTimeBackup="$(date +%s)"
 
+_info "Waiting before processing"
+echo "Sleeping ${BACKUP_WAIT_SECONDS} seconds..."
+sleep "${BACKUP_WAIT_SECONDS}"
+
+# Volumes
+#
+_metaTimeUploadStart="$(date +%s)"
 _backupStrategyIterationDays=""
-for _definition in ${_backupStrategyNormalized}
-do
+for _definition in ${_backupStrategyNormalized}; do
 	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
 	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
 	_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
@@ -123,10 +127,13 @@ do
 			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		fi		
 	else		
+		_metaTimeCompressStart="$(date +%s)"
 		tar -cv -C ${BACKUP_SOURCES} . > ${_fileNameArchive} # allow the var to expand, in case we have multiple sources
+		_metaTimeCompressEnd="$(date +%s)"
+		
 		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ]; 
-			then _execFunctionOrFail "Upload encrypted archiv" "_backupArchiveEncrypted" "${_fileNameArchive} ${_fileNameArchive}"
-			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive} ${_fileNameArchive}"
+			then _execFunctionOrFail "Upload encrypted archiv" "_backupArchiveEncrypted" "${_fileNameArchive}" "${_fileNameArchive}"
+			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}" "${_fileNameArchive}"
 		fi
 		rm ${_fileName}.tar
 	fi
@@ -134,15 +141,14 @@ do
 	if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
 		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveIncrementalOldest" "${_fileNamePrefix}"
 	elif [[ "${_retention}" == *"d" ]]; then 
-		_execFunctionOrFail "Remove archive backups [prefix: ${_fileNamePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_fileNamePrefix} ${_retentionDays}"
+		_execFunctionOrFail "Remove archive backups [prefix: ${_fileNamePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_fileNamePrefix}" "${_retentionDays}"
 	else
-		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveArchiveOldest" "${_fileNamePrefix} ${_retentionNumber}"
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveArchiveOldest" "${_fileNamePrefix}" "${_retentionNumber}"
 	fi
 done
-_influxdbTimeBackedUp="$(date +%s)"
-_execFunction "Post-Upload command" "_backupPostUploadCommand"
-echo "Upload finished"
 
+# Images
+#
 if [[ "${BACKUP_IMAGES}" == "true" ]]; then
 	if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
 		then _execFunctionOrFail "Create, encrypt and upload images in one step (On-The-Fly)" "_backupImagesEncryptedOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
@@ -150,18 +156,12 @@ if [[ "${BACKUP_IMAGES}" == "true" ]]; then
 	fi
 	 _execFunctionOrFail "Remove unused images" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 fi
+_metaTimeUploadedEnd="$(date +%s)"
 
+_execFunction "Post-Upload command" "_backupPostUploadCommand"
 
 _dockerExecLabel "docker-volume-backup.exec-post-backup"
 _docker start "${_containersToStop}"
-
-_info "Waiting before processing"
-echo "Sleeping ${BACKUP_WAIT_SECONDS} seconds..."
-sleep "${BACKUP_WAIT_SECONDS}"
-
-_influxdbTimeUpload="0"
-_influxdbTimeUploaded="0"
-
 _exec "Post-backup command" "$POST_BACKUP_COMMAND"
 
 if [ -f "$BACKUP_FILENAME" ]; then
@@ -169,20 +169,18 @@ if [ -f "$BACKUP_FILENAME" ]; then
   rm -vf "$BACKUP_FILENAME"
 fi
 
-_execFunction "Remove oldest backups" "_backupRemoveOldest" 3
-
 _info "Collecting metrics"
-_influxdbTimeFinish="$(date +%s)"
+_metaBackupEnd="$(date +%s)"
 _influxdbLine="${INFLUXDB_MEASUREMENT}\
 ,host=${BACKUP_HOSTNAME}\
 \
- size_compressed_bytes=$_influxdbBackupSize\
+ size_compressed_bytes=$_metaBackupSize\
 ,containers_total=$_containersCount\
 ,containers_stopped=$_containersToStopCount\
-,time_wall=$(( ${_influxdbTimeFinish} - ${_influxdbTimeStart} ))\
-,time_total=$(( ${_influxdbTimeFinish} - ${_influxdbTimeStart} - ${BACKUP_WAIT_SECONDS} ))\
-,time_compress=$(( ${_influxdbTimeBackedUp} - ${_influxdbTimeBackup} ))\
-,time_upload=$(( ${_influxdbTimeUploaded} - ${_influxdbTimeUpload} ))\
+,time_wall=$(( ${_metaBackupEnd} - ${_metaBackupStart} ))\
+,time_total=$(( ${_metaBackupEnd} - ${_metaBackupStart} - ${BACKUP_WAIT_SECONDS} ))\
+,time_compress=$(( ${_metaTimeCompressEnd} - ${_metaTimeCompressStart} ))\
+,time_upload=$(( ${_metaTimeUploadedEnd} - ${_metaTimeUploadStart} ))\
 "
 echo "$_influxdbLine" | sed 's/ /,/g' | tr , '\n'
 

@@ -25,8 +25,7 @@ ls -1d /backup/*
 echo "Size $(du -sh ${_backupRestorTarget})"
 sleep 3
 
-if ! yes_or_no "Do you want to delete content from existing volumes?"  
-then
+if ! yes_or_no "Do you want to delete content from existing volumes?" ; then
 	echo "Volumes must be empty before restore"
 	exit 1
 fi
@@ -36,8 +35,7 @@ if [ -S "$DOCKER_SOCK" ]; then
 	_containersThis="$(docker ps --filter status=running --filter name=docker-volume-backup --format '{{.ID}}')"	
 	_containersRunning="$(_dockerContainerFilter "status=running")"
 	_containersToStop=""
-	for _running in ${_containersRunning}
-	do
+	for _running in ${_containersRunning}; do
 		_found=""
 		for _this in ${_containersThis}; do
 			if [[ "${_running}" == "${_this}" ]]; then _found="${_this}" && break; fi

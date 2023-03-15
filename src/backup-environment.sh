@@ -52,8 +52,7 @@ _cronScheduleNormalized="$(_backupCronNormalize "${BACKUP_STRATEGY}" "${BACKUP_C
 
 # Target: Check Availability
 #
-if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]];
-then	
+if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]]; then	
 	_error "Backup target [${BACKUP_TARGET}] not implemented. Try one of these...\n$(ls -1 backup-target-* | sed 's|^backup-target-||' | sed 's|.sh$||')"
 	exit 1
 fi

@@ -35,8 +35,7 @@ function _dockerContainerFilter() {
 		_filters="${_filters} --filter "${filter}""
 	done
 	
-	if [[ ! -z "${_filters}" ]];
-	then
+	if [[ ! -z "${_filters}" ]]; then
 		docker container ls --format "{{.ID}}" --filter "status=running" ${_filters}
 	fi
 }
@@ -81,15 +80,13 @@ function _dockerExecLabel() {
 }
 
 function _exec() {
-    local _infoMessage="${1}"
-	local _command="${2}"
+    local _infoMessage="${1}" && shift
 	
-	if [ ! -z "${_command}" ];
-	then
-	  _info "${_infoMessage}"
-	  echo "${_command}"
-	  eval ${_command}
-	fi
+	if [ -z "$@" ]; then return 0; fi
+
+	_info "${_infoMessage}"
+	echo $@
+	eval $@
 }
 
 function _backupNumber() {
@@ -106,12 +103,10 @@ function _hasFunctionOrFail() {
 	local _errorMessage=${1}
 	local _functionName=${2}
 
+	if _hasFunction "${_functionName}"; then return 0; fi # Found function
 
-	if ! _hasFunction "${_functionName}";
-	then 
-		_error "${_errorMessage}"
-		exit 1
-	fi
+	_error "${_errorMessage}"
+	exit 1
 }
 
 function _hasFunction() {
@@ -123,30 +118,23 @@ function _hasFunction() {
 }
 
 function _execFunction() {
-    local _infoMessage=${1}
-	local _functionName=${2}
-	shift 2
+    local _infoMessage=${1} && shift
+	local _functionName=${2} && shift
 	
-    if _hasFunction "${_functionName}";
-    then
-		_info "${_infoMessage}"
-		${_functionName} $@
-    fi
+    if ! _hasFunction "${_functionName}"; then return 0; fi
+	
+	_info "${_infoMessage}"
+	${_functionName} $@
 }
 
 function _execFunctionOrFail() {
-    local _infoMessage=${1}
-	local _functionName=${2}
-	shift 2
+    local _infoMessage=${1} && shift
+	local _functionName=${2} && shift
 	
-    if _hasFunction "${_functionName}";
-    then
-		_info "${_infoMessage}"
-		${_functionName} $@
-	else
-		_error "${_functionName} not implemented."
-		exit 1
-    fi
+	_hasFunctionOrFail "${_functionName} not implemented." "${_functionName}";
+	
+	_info "${_infoMessage}"
+	${_functionName} $@
 }
 
 # Selfrelated. Backups can be copied/moved from previous rule.
@@ -160,8 +148,7 @@ function _backupStrategyNormalize() {
 	local _backupStrategy="$1"	
 	
 	local _backupStrategyNormalized=""	
-	for _definition in ${_backupStrategy}
-	do
+	for _definition in ${_backupStrategy}; do
 		if [[ ! "${_definition}" =~ ${BACKUP_DEFINITION} ]];
 		then
 			_error "Strategy definition incorrect [${_definition}].\nAllowed defintions:\n\t1\n\t1*7\n\t1*7d\n\ti1\n\ti1*7\n\ti1*7d"
@@ -181,8 +168,7 @@ function _backupStrategyNormalize() {
 	done
 	_backupStrategyNormalized=$(echo "${_backupStrategyNormalized}" | sed -r "s| $||")
 
-	if [[ "${_backupStrategyNormalized}" == *"\\?" ]];
-	then
+	if [[ "${_backupStrategyNormalized}" == *"\\?" ]]; then
 		_error "Strategy is broken: Missing last retention rule [${_backupStrategyNormalized}]."
 		exit 1
 	fi
@@ -195,8 +181,7 @@ function _backupStrategyExplain() {
 	echo -e "Explained backup strategy:"
 	local _backupStrategyIterationDays=""
 	local _backupStrategyBackupCount="0"
-	for _definition in ${_backupStrategyNormalized}
-	do
+	for _definition in ${_backupStrategyNormalized}; do
 		local _iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
 		local _retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
 		local _iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
@@ -257,7 +242,7 @@ function _backupStrategyExplain() {
 		echo -n -e "\t${_backupStrategyBackupCount} Backups * "
 		if [[ ${_example} -lt 1024 ]]; then echo -n "${_example} MB";
 		elif [[ ${_example} -lt 1024000 ]]; then awk "BEGIN { printf \"%.0f GB\", (${_example}/1024) }";
-	    else awk "BEGIN { printf \"%.0f TB\", (${_example}/1024/1024) }";
+		else awk "BEGIN { printf \"%.0f TB\", (${_example}/1024/1024) }";
 		fi
 		echo -n -e " \t=> "
 
