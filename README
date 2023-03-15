@@ -1,0 +1,27 @@
+# What's in here?
+
+## General
+ - Explains set backup procedure
+ - Validates set backup procedure before first run
+ - Send metrics to InfluxDB
+ - Override compression (Pipe + Extension)
+ - Override encryption (Pipe + Extension)
+ - Override backup target (@see backup-target-ssh.sh)
+ 
+## Backup
+ - Support Backup by strategy (no lacks)
+ - Support Simple backup
+ - Support Rotate backup-Files
+ - Iterative Backups
+ - Backup to Archive first, Compress And Upload Second (for little downtimes)
+ - Support Backup On-The-Fly
+ - Support Compress, Encrypt and Upload Backup On-The-Fly 
+ - Support Backup Docker Images
+ - Included backup targets
+	- SSH
+	 - PKI Authentification
+	 - 
+ 
+ 
+# Restore
+ - On-The-Fly Restore
