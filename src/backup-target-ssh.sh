@@ -145,7 +145,7 @@ function _backupImagesEncryptedOnTheFly() {
 	local _remoteBackupImages="$(${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" -type f")" # Speedup skipping
 	for _id in ${_ids}; do	
 		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
-		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then continue; fi  # Skip when found
+		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then echo "Skip: File already backed up [${_remoteFileName}]" && continue; fi  # Skip when found
 		
 		echo "Backing up image [${_id}] [${_remoteFileName}]"
 		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} |  ${BACKUP_ENCRYPT_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
@@ -159,7 +159,7 @@ function _backupImagesOnTheFly() {
 	local _remoteBackupImages="$(${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" -type f")" # Speedup skipping
 	for _id in ${_ids}; do	
 		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}"
-		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then continue; fi # Skip when found
+		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then echo "Skip: File already backed up [${_remoteFileName}]" && continue; fi # Skip when found
 		
 		echo "Backing up image [${_id}] [${_remoteFileName}]"
 		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} | ${SSH_REMOTE} "cat > ${SSH_REMOTE_PATH}/${_remoteFileName}"
