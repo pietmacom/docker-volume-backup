@@ -13,12 +13,12 @@ do
 	if [[ "${_iteration}" == "i"* ]]; then 
 		_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
-		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
+		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
 			then _hasFunctionOrFail "_backupArchiveEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncryptedOnTheFly";			
 			else _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";			
 		fi
 	else
-		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
+		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
 			then _hasFunctionOrFail "_backupArchiveEncrypted not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncrypted";
 			else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
 		fi
@@ -34,9 +34,9 @@ do
 done
 
 if [[ "${BACKUP_IMAGES}" == "true" ]]; then
-	if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
-		then _hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
-		else _hasFunctionOrFail "_backupImagesEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesEncryptedOnTheFly"
+	if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
+		then _hasFunctionOrFail "_backupImagesEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesEncryptedOnTheFly"
+		else _hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
 	fi
 	_hasFunctionOrFail "_backupRemoveImages not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveImages"
 fi
@@ -46,10 +46,10 @@ fi
 #
 _backupStrategyExplain "${_backupStrategyNormalized}"
 
-if [ "$CHECK_HOST" != "false" ]; then
+if [ "${CHECK_HOST}" != "false" ]; then
   _info "Check host availability"
   TEMPFILE="$(mktemp)"
-  ping -c 1 $CHECK_HOST | grep '1 packets transmitted, 1 received' > "$TEMPFILE"
+  ping -c 1 ${CHECK_HOST} | grep '1 packets transmitted, 1 received' > "$TEMPFILE"
   PING_RESULT="$(cat $TEMPFILE)"
   if [ ! -z "$PING_RESULT" ]; then
     echo "$CHECK_HOST is available."
@@ -118,13 +118,13 @@ do
 		_execFunctionOrFail "Create incremental backup" "_backupIncremental" "${BACKUP_SOURCES}" "${_fileName}" 
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
-		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
+		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
 			then _execFunctionOrFail "Create, encrypt and upload backup in one step (On-The-Fly)" "_backupArchiveEncryptedOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
 			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		fi		
 	else		
 		tar -cv -C ${BACKUP_SOURCES} . > ${_fileNameArchive} # allow the var to expand, in case we have multiple sources
-		if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ]; 
+		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ]; 
 			then _execFunctionOrFail "Upload encrypted archiv" "_backupArchiveEncrypted" "${_fileNameArchive} ${_fileNameArchive}"
 			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive} ${_fileNameArchive}"
 		fi
@@ -144,9 +144,9 @@ _execFunction "Post-Upload command" "_backupPostUploadCommand"
 echo "Upload finished"
 
 if [[ "${BACKUP_IMAGES}" == "true" ]]; then
-	if [ ! -z "$BACKUP_ENCRYPT_PASSPHRASE" ];
-		then _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
-		else _execFunctionOrFail "Create, encrypt and upload images in one step (On-The-Fly)" "_backupImagesEncryptedOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+	if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
+		then _execFunctionOrFail "Create, encrypt and upload images in one step (On-The-Fly)" "_backupImagesEncryptedOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+		else _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 	fi
 	 _execFunctionOrFail "Remove unused images" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 fi
@@ -156,8 +156,8 @@ _dockerExecLabel "docker-volume-backup.exec-post-backup"
 _docker start "${_containersToStop}"
 
 _info "Waiting before processing"
-echo "Sleeping $BACKUP_WAIT_SECONDS seconds..."
-sleep "$BACKUP_WAIT_SECONDS"
+echo "Sleeping ${BACKUP_WAIT_SECONDS} seconds..."
+sleep "${BACKUP_WAIT_SECONDS}"
 
 _influxdbTimeUpload="0"
 _influxdbTimeUploaded="0"

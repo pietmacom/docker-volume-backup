@@ -182,7 +182,7 @@ function _backupRemoveImages() {
 	_keepFiles=""
 	for _id in ${_ids}
 	do	
-		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}"
+		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}*"
 		_keepFiles="${_keepFiles}-e \"${_remoteFileName}\" "
 	done
 	
