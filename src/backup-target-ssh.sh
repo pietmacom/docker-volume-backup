@@ -177,15 +177,10 @@ function _backupRemoveImages() {
 	shift	
 	local _keepIds="$@"
 	
-	# exit when empty?
-	
-	_keepFiles=""
-	for _id in ${_ids}
-	do	
-		_remoteFileName="${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}*"
-		_keepFiles="${_keepFiles}-e \"${_remoteFileName}\" "
+	local _keepFiles=""
+	for _id in ${_keepIds}; do
+		_keepFiles="${_keepFiles} -not -name \"${_filePrefix}-${_id}.tar${BACKUP_COMPRESS_EXTENSION}*\" ";
 	done
-	
-	echo "deleting!"
-	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" -type f -exec basename {} \; | grep -v ${_keepFiles}"
+
+	${SSH_REMOTE} "find ${SSH_REMOTE_PATH} -maxdepth 1 -name \"${_filePrefix}*\" ${_keepFiles} -type f"
 }
