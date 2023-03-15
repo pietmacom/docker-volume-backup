@@ -44,7 +44,6 @@
  - INFLUXDB_MEASUREMENT="docker_volume_backup"
 
 ### BACKUP_TARGET="ssh"
-
  - PRE_SSH_COMMAND=""
  - POST_SSH_COMMAND=""
  - SSH_HOST=""
@@ -53,11 +52,9 @@
  - SSH_REMOTE_PATH="."
  
 ### BACKUP_TARGET="filesystem"
-
  - BACKUP_FILESYSTEM_PATH="/archive"
 
 ### For override
-
  - BACKUP_COMPRESS_EXTENSION=".gz"
  - BACKUP_COMPRESS_PIPE="gzip"
  - BACKUP_DECOMPRESS_PIPE="gzip -d"
