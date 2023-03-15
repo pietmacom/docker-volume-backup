@@ -7,7 +7,6 @@ source backup-functions.sh
 source backup-environment.sh
 
 _info "Validate Backup Strategy"
-
 echo -n -e "Normalized backup strategy definition:\n\t${_backupStrategyNormalized}"\
     && if [[ ! "${_backupStrategyNormalized}" == "${BACKUP_STRATEGY}" ]]; then echo -n -e " (given: ${BACKUP_STRATEGY})\n"; else echo -n -e "\n"; fi
 echo
@@ -19,10 +18,10 @@ echo
 _backupStrategyExplain "${_backupStrategyNormalized}"
 _backupStrategyValidate "${_backupStrategyNormalized}"
 
-# Add our cron entry, and direct stdout & stderr to Docker commands stdout
-echo "Installing cron.d entry: docker-volume-backup"
-echo "${_cronScheduleNormalized} /root/backup.sh > /proc/1/fd/1 2>&1" >> /var/spool/cron/crontabs/root
 
-# Let cron take the wheel
-echo "Starting cron in foreground with expression: ${_cronScheduleNormalized}"
+_info "Schedule Backups"
+echo "Installing cron.d entry: docker-volume-backup"
+echo "${_cronScheduleNormalized} /root/backup.sh > /proc/1/fd/1 2>&1" >> /var/spool/cron/crontabs/root # Add our cron entry, and direct stdout & stderr to Docker commands stdout
+
+echo "Starting cron in foreground with expression: ${_cronScheduleNormalized}" # Let cron take the wheel
 crond -f
