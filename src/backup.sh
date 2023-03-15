@@ -24,7 +24,7 @@ if [ "${CHECK_HOST}" != "false" ]; then
   fi
 fi
 
-_info "Backup starting"
+_info "Start Backup"
 _metaBackupStart="$(date +%s)"
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersToStop="$(_dockerContainerFilter "status=running" "label=docker-volume-backup.stop-during-backup=true" "${BACKUP_CUSTOM_LABEL}")"
@@ -119,7 +119,7 @@ if [[ "${BACKUP_IMAGES}" == "true" ]]; then
 		then _execFunctionOrFail "Create, encrypt and upload images in one step (On-The-Fly)" "_backupImagesEncryptedOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 		else _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 	fi
-	 _execFunctionOrFail "Remove deleted images [${BACKUP_IMAGES_FILENAME_PREFIX}]" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+	 _execFunctionOrFail "Remove deleted images [${BACKUP_IMAGES_FILENAME_PREFIX}*]" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 fi
 _metaTimeUploadedEnd="$(date +%s)"
 
@@ -127,16 +127,28 @@ _execFunction "Run Post-Upload command" "_backupPostUploadCommand"
 _docker "Start containers" "start" "${_containersToStop}"
 _dockerExecLabel "Run Post-Backup command in containers" "docker-volume-backup.exec-post-backup"
 _exec "Post-backup command" "$POST_BACKUP_COMMAND"
+_metaBackupEnd="$(date +%s)"
 
 
 _info "Collecting metrics"
-_metaBackupEnd="$(date +%s)"
+
+# Set defaults if not set
+#
+_metaBackupStart="${_metaBackupStart:-0}"
+_metaBackupEnd="${_metaBackupEnd:-0}"
+_containersCount="${_containersCount:-0}"
+_containersToStopCount="${_containersToStopCount:-0}"
+_metaTimeCompressStart="${_metaTimeCompressStart:-0}"
+_metaTimeCompressEnd="${_metaTimeCompressEnd:-0}"
+_metaTimeUploadStart="${_metaTimeUploadStart:-0}"
+_metaTimeUploadedEnd="${_metaTimeUploadedEnd:-0}"
+
 _influxdbLine="${INFLUXDB_MEASUREMENT}\
 ,host=${BACKUP_HOSTNAME}\
 \
- size_compressed_bytes=$_metaBackupSize\
-,containers_total=$_containersCount\
-,containers_stopped=$_containersToStopCount\
+ size_compressed_bytes=${_metaBackupSize}\
+,containers_total=${_containersCount}\
+,containers_stopped=${_containersToStopCount}\
 ,time_wall=$(( ${_metaBackupEnd} - ${_metaBackupStart} ))\
 ,time_total=$(( ${_metaBackupEnd} - ${_metaBackupStart} - ${BACKUP_WAIT_SECONDS} ))\
 ,time_compress=$(( ${_metaTimeCompressEnd} - ${_metaTimeCompressStart} ))\
@@ -155,6 +167,6 @@ if [[ ! -z "$INFLUXDB_URL" ]]; then
     --data-binary "$_influxdbLine"
 fi
 
-_info "Backup finished"
+_info "Finished backup"
 echo "Will wait for next scheduled backup"
 
