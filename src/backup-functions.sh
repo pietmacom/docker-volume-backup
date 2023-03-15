@@ -3,15 +3,16 @@
 BACKUP_DEFINITION="^(i*[0-9]+)(\*[0-9]+d*)?$"
 
 function _info {
-  bold="\033[1m"
-  reset="\033[0m"
-  echo -e "\n$bold[INFO] $@$reset\n"
+  local _bold="\e[1m"
+  local _reset="\e[0m"
+  echo -e "\n${_bold}[INFO] $@${_reset}"
 }
 
 function _error {
-  bold="\033[1m"
-  reset="\033[0m"
-  echo -e "\n$bold[ERROR] $@$reset\n" 1>&2
+  local _bold="\e[1m"
+  local _red="\e[31m"
+  local _reset="\e[0m"
+  echo -e "\n${_bold}${_red}[ERROR]${_reset}${_bold} $@${_reset}" 1>&2
 }
 
 function yes_or_no {
@@ -23,7 +24,6 @@ function yes_or_no {
         esac
     done
 }
-
 
 function _dockerContainerFilter() {
 	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi

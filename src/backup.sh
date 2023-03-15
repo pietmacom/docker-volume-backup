@@ -126,7 +126,7 @@ _metaTimeUploadedEnd="$(date +%s)"
 _execFunction "Run Post-Upload command" "_backupPostUploadCommand"
 _docker "Start containers" "start" "${_containersToStop}"
 _dockerExecLabel "Run Post-Backup command in containers" "docker-volume-backup.exec-post-backup"
-_exec "Post-backup command" "$POST_BACKUP_COMMAND"
+_exec "Run Post-backup command" "$POST_BACKUP_COMMAND"
 _metaBackupEnd="$(date +%s)"
 
 
