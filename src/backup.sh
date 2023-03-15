@@ -5,7 +5,7 @@ source backup-environment.sh # Cronjobs don't inherit their env, so load from fi
 
 # Main
 #
-_info "Validate Backup Strategy"
+_info "Validate backup strategy"
 _backupStrategyExplain "${_backupStrategyNormalized}"
 _backupStrategyValidate "${_backupStrategyNormalized}"
 
@@ -39,14 +39,14 @@ else
   echo "Cannot access \"$DOCKER_SOCK\", won't look for containers to stop"
 fi
 
-_docker stop "${_containersToStop}"
-_dockerExecLabel "docker-volume-backup.exec-pre-backup"
-_exec "Pre-backup command" "$PRE_BACKUP_COMMAND"
+_dockerExecLabel "Run Pre-Backup command in containers" "docker-volume-backup.exec-pre-backup"
+_docker "Stop containers" "stop" "${_containersToStop}"
+_exec "Run Pre-Backup command" "$PRE_BACKUP_COMMAND"
 
 _execFunction "Test connection" "_backupTestConnection"
-_execFunction "Pre-Upload command" "_backupPreUploadCommand"
+_execFunction "Run Pre-Upload command" "_backupPreUploadCommand"
 
-_info "Waiting before processing"
+_info "Wait before processing"
 echo "Sleeping ${BACKUP_WAIT_SECONDS} seconds..."
 sleep "${BACKUP_WAIT_SECONDS}"
 
@@ -84,12 +84,12 @@ for _definition in ${_backupStrategyNormalized}; do
 
 	_fileNameArchive="${_fileName}.tar"	
 	if [[ "${_iteration}" == "i"* ]]; then
-		_execFunctionOrFail "Create incremental backup" "_backupIncremental" "${BACKUP_SOURCES}" "${_fileName}" 
+		_execFunctionOrFail "Create incremental backup [${_fileName}]" "_backupIncremental" "${BACKUP_SOURCES}" "${_fileName}" 
 		
 	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
 		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
-			then _execFunctionOrFail "Create, encrypt and upload backup in one step (On-The-Fly)" "_backupArchiveEncryptedOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
-			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly)" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
+			then _execFunctionOrFail "Create, encrypt and upload backup in one step (On-The-Fly) [${_fileNameArchive}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}]" "_backupArchiveEncryptedOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"			
+			else _execFunctionOrFail "Create and upload backup in one step (On-The-Fly) [${_fileNameArchive}${BACKUP_COMPRESS_EXTENSION}]" "_backupArchiveOnTheFly" "${BACKUP_SOURCES}" "${_fileNameArchive}"
 		fi		
 	else		
 		_metaTimeCompressStart="$(date +%s)"
@@ -97,18 +97,18 @@ for _definition in ${_backupStrategyNormalized}; do
 		_metaTimeCompressEnd="$(date +%s)"
 		
 		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ]; 
-			then _execFunctionOrFail "Upload encrypted archiv" "_backupArchiveEncrypted" "${_fileNameArchive}" "${_fileNameArchive}"
-			else _execFunctionOrFail "Upload archiv" "_backupArchive" "${_fileNameArchive}" "${_fileNameArchive}"
+			then _execFunctionOrFail "Upload encrypted archiv [${_fileNameArchive}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}]" "_backupArchiveEncrypted" "${_fileNameArchive}" "${_fileNameArchive}"
+			else _execFunctionOrFail "Upload archiv [${_fileNameArchive}${BACKUP_COMPRESS_EXTENSION}]" "_backupArchive" "${_fileNameArchive}" "${_fileNameArchive}"
 		fi
-		rm ${_fileName}.tar
+		rm "${_fileNameArchive}"
 	fi
 	
 	if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
-		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveIncrementalOldest" "${_fileNamePrefix}"
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} incremental backups [${_fileNamePrefix}*]" "_backupRemoveIncrementalOldest" "${_fileNamePrefix}"
 	elif [[ "${_retention}" == *"d" ]]; then 
-		_execFunctionOrFail "Remove archive backups [prefix: ${_fileNamePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_fileNamePrefix}" "${_retentionDays}"
+		_execFunctionOrFail "Remove archive backups [${_fileNamePrefix}*] older than ${_retentionDays} days" "_backupRemoveArchiveOlderThanDays" "${_fileNamePrefix}" "${_retentionDays}"
 	else
-		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [prefix: ${_fileNamePrefix}*]" "_backupRemoveArchiveOldest" "${_fileNamePrefix}" "${_retentionNumber}"
+		_execFunctionOrFail "Remove oldest ${_retentionNumber} archive backups [${_fileNamePrefix}*]" "_backupRemoveArchiveOldest" "${_fileNamePrefix}" "${_retentionNumber}"
 	fi
 done
 
@@ -119,20 +119,15 @@ if [[ "${BACKUP_IMAGES}" == "true" ]]; then
 		then _execFunctionOrFail "Create, encrypt and upload images in one step (On-The-Fly)" "_backupImagesEncryptedOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 		else _execFunctionOrFail "Create and upload images in one step (On-The-Fly)" "_backupImagesOnTheFly" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 	fi
-	 _execFunctionOrFail "Remove unused images" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
+	 _execFunctionOrFail "Remove deleted images [${BACKUP_IMAGES_FILENAME_PREFIX}]" "_backupRemoveImages" "${BACKUP_IMAGES_FILENAME_PREFIX}" "$(docker image ls -q)"
 fi
 _metaTimeUploadedEnd="$(date +%s)"
 
-_execFunction "Post-Upload command" "_backupPostUploadCommand"
-
-_dockerExecLabel "docker-volume-backup.exec-post-backup"
-_docker start "${_containersToStop}"
+_execFunction "Run Post-Upload command" "_backupPostUploadCommand"
+_docker "Start containers" "start" "${_containersToStop}"
+_dockerExecLabel "Run Post-Backup command in containers" "docker-volume-backup.exec-post-backup"
 _exec "Post-backup command" "$POST_BACKUP_COMMAND"
 
-if [ -f "$BACKUP_FILENAME" ]; then
-  _info "Cleaning up"
-  rm -vf "$BACKUP_FILENAME"
-fi
 
 _info "Collecting metrics"
 _metaBackupEnd="$(date +%s)"

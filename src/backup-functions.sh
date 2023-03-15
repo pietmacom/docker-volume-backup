@@ -56,26 +56,34 @@ function _dockerContainerName() {
 }
 
 function _docker(){
-	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
+	local _message="${1}" && shift
+	local _action="${1}" && shift
+	local _ids="$@"	
 	
-	local _action="$1"
-	local _ids="$2"	
-	if [[  -z "${_ids}"  ]]; then return 0; fi
-
-	_info "${_action} containers"
+	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
+	if [[ -z "${_ids}" ]]; then return 0; fi
+	
+	_info "${_message}"
 	docker ${_action} ${_ids}
 }
 
 function _dockerExecLabel() {
+	local _message="${1}"
+	local _label="${2}"
+	
 	if [ ! -S "$DOCKER_SOCK" ]; then return 0; fi
 	
-	local _label="$1"
-	for id in $(_dockerContainerFilter "label=${_label}" "${BACKUP_CUSTOM_LABEL}"); do
-		name="$(_dockerContainerName "$id")"
-		cmd="$(_dockerContainerLabelValue "${id}" "${_label}")"
-		_info "Exec ${_label} command for: $name"
-		echo docker exec -t $id $cmd # echo the command we're using, for debuggability
-		eval docker exec -t $id $cmd
+	local _ids="$(_dockerContainerFilter "label=${_label}" "${BACKUP_CUSTOM_LABEL}")"
+	if [[ -z "${_ids}" ]]; then return 0; fi
+	
+	_info "${_message}"
+	for _id in ${_ids}; do
+		local _name="$(_dockerContainerName "${_id}")"
+		local _cmd="$(_dockerContainerLabelValue "${_id}" "${_label}")"
+		
+		_info "Exec ${_label} Command For: ${_name}"
+		echo docker exec -t ${_id} ${_cmd} # echo the command we're using, for debuggability
+		eval docker exec -t ${_id} ${_cmd}
 	done
 }
 
