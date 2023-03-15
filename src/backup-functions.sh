@@ -119,7 +119,7 @@ function _hasFunction() {
 
 function _execFunction() {
     local _infoMessage=${1} && shift
-	local _functionName=${2} && shift
+	local _functionName=${1} && shift
 	
     if ! _hasFunction "${_functionName}"; then return 0; fi
 	
@@ -129,7 +129,7 @@ function _execFunction() {
 
 function _execFunctionOrFail() {
     local _infoMessage=${1} && shift
-	local _functionName=${2} && shift
+	local _functionName=${1} && shift
 	
 	_hasFunctionOrFail "${_functionName} not implemented." "${_functionName}";
 	
@@ -173,6 +173,45 @@ function _backupStrategyNormalize() {
 		exit 1
 	fi
 	echo "${_backupStrategyNormalized}"
+}
+
+function _backupStrategyValidate() {
+	local _backupStrategyNormalized="$1"
+	
+	for _definition in ${_backupStrategyNormalized}; do
+		_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
+		_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+		
+		if [[ "${_iteration}" == "i"* ]]; then 
+			_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
+		elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
+			if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
+				then _hasFunctionOrFail "_backupArchiveEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncryptedOnTheFly";			
+				else _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";			
+			fi
+		else
+			if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
+				then _hasFunctionOrFail "_backupArchiveEncrypted not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncrypted";
+				else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
+			fi
+		fi
+
+		if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
+			_hasFunctionOrFail "_backupRemoveIncrementalOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalOldest"		
+		elif [[ "${_retention}" == *"d" ]]; then 
+			_hasFunctionOrFail "_backupRemoveArchiveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOlderThanDays"
+		else
+			_hasFunctionOrFail "_backupRemoveArchiveOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOldest"
+		fi
+	done
+
+	if [[ "${BACKUP_IMAGES}" == "true" ]]; then
+		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
+			then _hasFunctionOrFail "_backupImagesEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesEncryptedOnTheFly"
+			else _hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
+		fi
+		_hasFunctionOrFail "_backupRemoveImages not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveImages"
+	fi
 }
 
 function _backupStrategyExplain() {

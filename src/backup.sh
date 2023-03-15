@@ -3,47 +3,12 @@
 source backup-functions.sh
 source backup-environment.sh # Cronjobs don't inherit their env, so load from file
 
-# Target: Check Availability Of Functions
+# Main
 #
-for _definition in ${_backupStrategyNormalized}; do
-	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
-	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
-	
-	if [[ "${_iteration}" == "i"* ]]; then 
-		_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
-	elif [[ "${BACKUP_ONTHEFLY}" == "true" ]]; then
-		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
-			then _hasFunctionOrFail "_backupArchiveEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncryptedOnTheFly";			
-			else _hasFunctionOrFail "_backupArchiveOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveOnTheFly";			
-		fi
-	else
-		if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
-			then _hasFunctionOrFail "_backupArchiveEncrypted not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchiveEncrypted";
-			else _hasFunctionOrFail "_backupArchive not Implemented by backup target [${BACKUP_TARGET}]" "_backupArchive";
-		fi
-	fi
-
-	if [[ "${_iteration}" == "i"* ]]; then # incremental backups maintain only one directory per _retentionDays
-		_hasFunctionOrFail "_backupRemoveIncrementalOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveIncrementalOldest"		
-	elif [[ "${_retention}" == *"d" ]]; then 
-		_hasFunctionOrFail "_backupRemoveArchiveOlderThanDays not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOlderThanDays"
-	else
-		_hasFunctionOrFail "_backupRemoveArchiveOldest not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveArchiveOldest"
-	fi
-done
-
-if [[ "${BACKUP_IMAGES}" == "true" ]]; then
-	if [ ! -z "${BACKUP_ENCRYPT_PASSPHRASE}" ];
-		then _hasFunctionOrFail "_backupImagesEncryptedOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesEncryptedOnTheFly"
-		else _hasFunctionOrFail "_backupImagesOnTheFly not Implemented by backup target [${BACKUP_TARGET}]" "_backupImagesOnTheFly"
-	fi
-	_hasFunctionOrFail "_backupRemoveImages not Implemented by backup target [${BACKUP_TARGET}]" "_backupRemoveImages"
-fi
-
-
-# Main Process
-#
+_info "Validate Backup Strategy"
 _backupStrategyExplain "${_backupStrategyNormalized}"
+_backupStrategyValidate "${_backupStrategyNormalized}"
+
 
 if [ "${CHECK_HOST}" != "false" ]; then
   _info "Check host availability"
