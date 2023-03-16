@@ -30,7 +30,7 @@ if ! yes_or_no "Do you want to delete content from existing volumes?" ; then
 	exit 1
 fi
 
-_info "Cleanup existing volumes"
+
 if [ -S "$DOCKER_SOCK" ]; then
 	_containersThis="$(docker ps --filter status=running --filter name=docker-volume-backup --format '{{.ID}}')"	
 	_containersRunning="$(_dockerContainerFilter "status=running")"
