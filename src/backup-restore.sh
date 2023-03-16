@@ -45,7 +45,7 @@ if [ -S "$DOCKER_SOCK" ]; then
 	done
 	echo "$(docker ps --format "{{.ID}}" | wc -l) containers running on host in total"
 	echo "$(echo "${_containersToStop}" | wc -w) containers to be stopped during restore"
-	_docker stop "${_containersToStop}"
+	_docker "Stop containers" "stop" "${_containersToStop}"
 fi
 find ${_backupRestorTarget} -mindepth 2 -maxdepth 2 -print0 | xargs -0 -I {} rm -v -R {};
 echo "Size $(du -sh ${_backupRestorTarget})"
@@ -55,4 +55,4 @@ _execFunctionOrFail "Restore backup ${_backupName}" "_backupRestore" "${_backupN
 echo "Size $(du -sh ${_backupRestorTarget})"
 sleep 3
 
-_docker start "${_containersToStop}"
+_docker "Start containers" start "${_containersToStop}"
