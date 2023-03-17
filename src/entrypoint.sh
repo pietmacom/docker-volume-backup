@@ -8,6 +8,8 @@ source backup-functions.sh
 source backup-environment.sh
 
 _info "Validate backup strategy"
+_backupTargetExplain
+
 echo -n -e "Normalized backup strategy definition:\n\t${_backupStrategyNormalized}"\
     && if [[ ! "${_backupStrategyNormalized}" == "${BACKUP_STRATEGY}" ]]; then echo -n -e " (given: ${BACKUP_STRATEGY})\n"; else echo -n -e "\n"; fi
 echo
@@ -16,7 +18,6 @@ echo -n -e "Normalized Cron definition:\n\t${_cronScheduleNormalized}" \
     && if [[ ! "${_cronScheduleNormalized}" == "${BACKUP_CRON_SCHEDULE}" ]]; then echo -n -e " (given: ${BACKUP_CRON_SCHEDULE})\n"; else echo -n -e "\n"; fi
 echo
 
-_backupTargetExplain
 _backupStrategyExplain "${_backupStrategyNormalized}"
 _backupStrategyValidate "${_backupStrategyNormalized}"
 

@@ -155,7 +155,7 @@ function _hasFunctionPrint() {
 }
 
 function _backupTargetExplain() {
-	echo -e "Explain supported actions of backup target [${BACKUP_TARGET}]:"
+	echo -e "Explain supported actions by backup target [${BACKUP_TARGET}]:"
 	echo -e "\tTest connection\t\t\t\t\t$(_hasFunctionPrint "_backupTestConnection")"
 	echo -e "\tPre-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPreUploadCommand")"
 	echo -e "\tPost-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPostUploadCommand")"
@@ -165,13 +165,13 @@ function _backupTargetExplain() {
 	echo -e "\tBackup Archive\t\t\t\t\t$(_hasFunctionPrint "_backupArchive")"
 	echo -e "\tBackup Encrypted Archive\t\t\t$(_hasFunctionPrint "_backupArchiveEncrypted")"
 	echo -e "\tRotate Incremental Backup\t\t\t$(_hasFunctionPrint "_backupRemoveIncrementalPrevious")"
-	echo -e "\tRotate Backups By Auantity\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOldest")"
+	echo -e "\tRotate Backups By Quantity\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOldest")"
 	echo -e "\tRotate Backups By Age\t\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOlderThanDays")"
 	echo -e "\tList Backups For Restore\t\t\t$(_hasFunctionPrint "_backupRestoreListFiles")"
 	echo -e "\tRestore Backups\t\t\t\t\t$(_hasFunctionPrint "_backupRestore")"
 	echo -e "\tBackup Encrypted Docker Images On-The-Fly\t$(_hasFunctionPrint "_backupImagesEncryptedOnTheFly")"
 	echo -e "\tBackup Docker Images On-The-Fly\t\t\t$(_hasFunctionPrint "_backupImagesOnTheFly")"
-	echo -e "\tRemove deleted Docker Images\t\t\t$(_hasFunctionPrint "_backupRemoveImages")"
+	echo -e "\tRemove Deleted Docker Images\t\t\t$(_hasFunctionPrint "_backupRemoveImages")"
 	echo
 }
 
