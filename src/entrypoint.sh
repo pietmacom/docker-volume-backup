@@ -33,7 +33,7 @@ _backupStrategyValidate "${_backupStrategyNormalized}"
 
 _info "Schedule backups"
 echo "Installing cron.d entry: docker-volume-backup"
-echo "${_cronScheduleNormalized} set -o pipefail && /root/backup.sh 2>&1 | tee /var/log/docker-volume-backup.log > /proc/1/fd/1 2>&1 || /root/backup-send-log.sh > /proc/1/fd/1 2>&1" > /var/spool/cron/crontabs/root # Add our cron entry, and direct stdout & stderr to Docker commands stdout
+echo "${_cronScheduleNormalized} /root/backup-cronjob.sh" > /var/spool/cron/crontabs/root # Add our cron entry, and direct stdout & stderr to Docker commands stdout
 
 echo "Starting cron in foreground with expression: ${_cronScheduleNormalized}" # Let cron take the wheel
 crond -f
