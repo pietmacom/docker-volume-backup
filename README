@@ -1,5 +1,8 @@
 # What's in here?
 
+On-The-Fly backups stop writing backups to your storage before it gets uploaded. That extends the life of SSDs and SD-Cards.
+
+
 ## General
  - Explains set backup procedure
  - Validates set backup procedure
