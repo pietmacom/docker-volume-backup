@@ -60,7 +60,7 @@ function _backupArchiveEncrypted() {
 	local _remoteFileName="${_fileName}${BACKUP_COMPRESS_EXTENSION}${BACKUP_ENCRYPT_EXTENSION}"
 	
 	if [[ -e "${BACKUP_FILESYSTEM_PATH}/${_remoteFileName}" ]]; then echo "Skip: File already backed up [${_remoteFileName}]" && return 0; fi
-	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${BACKUP_ENCRYPT_PIPE} | > "${BACKUP_FILESYSTEM_PATH}/${_remoteFileName}"
+	cat ${_sourceFile} | ${BACKUP_COMPRESS_PIPE} | ${BACKUP_ENCRYPT_PIPE} > "${BACKUP_FILESYSTEM_PATH}/${_remoteFileName}"
 	_metaBackupSize="$(du -bs ${BACKUP_FILESYSTEM_PATH}/${_remoteFileName} | cut -f1)"
 }
 
@@ -132,7 +132,7 @@ function _backupImagesOnTheFly() {
 		if echo "${_remoteBackupImages}" | grep -q "${_remoteFileName}" ; then echo "Skip: File already backed up [${_remoteFileName}]" && continue; fi # Skip when found
 		
 		echo "Backing up image [${_id}] [${_remoteFileName}]"
-		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} | "${BACKUP_FILESYSTEM_PATH}/${_remoteFileName}"
+		docker save "${_id}" | ${BACKUP_COMPRESS_PIPE} > "${BACKUP_FILESYSTEM_PATH}/${_remoteFileName}"
 	done
 }
 
