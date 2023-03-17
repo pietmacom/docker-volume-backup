@@ -14,7 +14,7 @@ if [[ -z "${DOCKER_SOCK}" ]]; then
 fi
 
 _info "Send notification"
-if docker run -it --rm containrrr/shoutrrr send --url "${BACKUP_NOTIFICATION_URL}" --message "$(cat "${_backupLog}" | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")";
+if docker run -t --rm containrrr/shoutrrr send --url "${BACKUP_NOTIFICATION_URL}" --message "$(cat "${_backupLog}" | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")";
 	then echo "Notification has been send."
 	else echo "Notification couldn't be send."
 fi
