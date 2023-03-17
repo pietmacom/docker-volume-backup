@@ -146,33 +146,32 @@ function _execFunctionOrFail() {
 }
 
 function _hasFunctionPrint() {
-	local _errorMessage=${1}
-	local _functionName=${2}
+	local _functionName=${1}
 
 	if _hasFunction "${_functionName}"; 
-		then echo "Yey"
-		else "No"
+		then echo "Yes"
+		else echo "No"
 	fi
 }
 
 function _backupTargetExplain() {
 	echo -e "Explaine backup target [${BACKUP_TARGET}]:"
-	echo -e "\tTest connection\t\t$(_hasFunctionPrint "_backupTestConnection")"
-	echo -e "\tPre-Upload Command\t\t$(_hasFunctionPrint "_backupPreUploadCommand")"
-	echo -e "\tPost-Upload Command\t\t$(_hasFunctionPrint "_backupPostUploadCommand")"
-	echo -e "\tBackup Archive On-The-Fly\t\t$(_hasFunctionPrint "_backupArchiveOnTheFly")"
+	echo -e "\tTest connection\t\t\t\t\t$(_hasFunctionPrint "_backupTestConnection")"
+	echo -e "\tPre-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPreUploadCommand")"
+	echo -e "\tPost-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPostUploadCommand")"
+	echo -e "\tBackup Archive On-The-Fly\t\t\t$(_hasFunctionPrint "_backupArchiveOnTheFly")"
 	echo -e "\tBackup Encrypted Archive On-The-Fly\t\t$(_hasFunctionPrint "_backupArchiveEncryptedOnTheFly")"
-	echo -e "\tBackup Incremental\t\t$(_hasFunctionPrint "_backupIncremental")"
-	echo -e "\tBackup Archive\t\t$(_hasFunctionPrint "_backupArchive")"
-	echo -e "\tBackup Encrypted Archive\t\t$(_hasFunctionPrint "_backupArchiveEncrypted")"
-	echo -e "\tRotate Incremental Backup\t\t$(_hasFunctionPrint "_backupRemoveIncrementalPrevious")"
-	echo -e "\tRotate Backups By Auantity\t\t$(_hasFunctionPrint "_backupRemoveArchiveOldest")"
-	echo -e "\tRotate Backups By Age\t\t$(_hasFunctionPrint "_backupRemoveArchiveOlderThanDays")"
-	echo -e "\tList Backups\t\t$(_hasFunctionPrint "_backupRestoreListFiles")"
+	echo -e "\tBackup Incremental\t\t\t\t$(_hasFunctionPrint "_backupIncremental")"
+	echo -e "\tBackup Archive\t\t\t\t\t$(_hasFunctionPrint "_backupArchive")"
+	echo -e "\tBackup Encrypted Archive\t\t\t$(_hasFunctionPrint "_backupArchiveEncrypted")"
+	echo -e "\tRotate Incremental Backup\t\t\t$(_hasFunctionPrint "_backupRemoveIncrementalPrevious")"
+	echo -e "\tRotate Backups By Auantity\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOldest")"
+	echo -e "\tRotate Backups By Age\t\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOlderThanDays")"
+	echo -e "\tList Backups For Restore\t\t\t\t$(_hasFunctionPrint "_backupRestoreListFiles")"
 	echo -e "\tRestore Backups\t\t$(_hasFunctionPrint "_backupRestore")"
-	echo -e "\tBackup Encrypted Docker Images On-The-Fly\t\t$(_hasFunctionPrint "_backupImagesEncryptedOnTheFly")"
-	echo -e "\tBackup Docker Images On-The-Fly\t\t$(_hasFunctionPrint "_backupImagesOnTheFly")"
-	echo -e "\tRemove deleted Docker Images\t\t$(_hasFunctionPrint "_backupRemoveImages")"
+	echo -e "\tBackup Encrypted Docker Images On-The-Fly\t\t\t$(_hasFunctionPrint "_backupImagesEncryptedOnTheFly")"
+	echo -e "\tBackup Docker Images On-The-Fly\t\t\t$(_hasFunctionPrint "_backupImagesOnTheFly")"
+	echo -e "\tRemove deleted Docker Images\t\t\t$(_hasFunctionPrint "_backupRemoveImages")"
 	echo
 }
 
