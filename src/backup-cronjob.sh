@@ -5,7 +5,7 @@ source backup-environment.sh
 
 _backupLog="/var/log/docker-volume-backup.log"
 
-if ! set -o pipefail && /root/backup.sh 2>&1 | tee "${_backupLog}" > /proc/1/fd/1 2>&1; then
+if ! set -o pipefail && /root/backup.sh 2>&1 | tee "${_backupLog}"; then
 	if [[ -z "${BACKUP_NOTIFICATION_URL}" ]]; then
 		exit 0
 	fi
