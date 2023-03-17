@@ -14,5 +14,7 @@ if [[ -z "${DOCKER_SOCK}" ]]; then
 	exit 1
 fi
 
-_docker exec -it --rm containrrr/shoutrrr --url "${BACKUP_NOTIFICATION_URL}" --message "$(cat "${_backupLog}")"
+if ! _docker run -it --rm containrrr/shoutrrr send --url "${BACKUP_NOTIFICATION_URL}" --message "$(cat "${_backupLog}")"; then
+	_error "Sending notification failed."
+fi
 
