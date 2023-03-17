@@ -167,9 +167,9 @@ function _backupTargetExplain() {
 	echo -e "\tRotate Incremental Backup\t\t\t$(_hasFunctionPrint "_backupRemoveIncrementalPrevious")"
 	echo -e "\tRotate Backups By Auantity\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOldest")"
 	echo -e "\tRotate Backups By Age\t\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOlderThanDays")"
-	echo -e "\tList Backups For Restore\t\t\t\t$(_hasFunctionPrint "_backupRestoreListFiles")"
+	echo -e "\tList Backups For Restore\t\t\t$(_hasFunctionPrint "_backupRestoreListFiles")"
 	echo -e "\tRestore Backups\t\t$(_hasFunctionPrint "_backupRestore")"
-	echo -e "\tBackup Encrypted Docker Images On-The-Fly\t\t\t$(_hasFunctionPrint "_backupImagesEncryptedOnTheFly")"
+	echo -e "\tBackup Encrypted Docker Images On-The-Fly\t$(_hasFunctionPrint "_backupImagesEncryptedOnTheFly")"
 	echo -e "\tBackup Docker Images On-The-Fly\t\t\t$(_hasFunctionPrint "_backupImagesOnTheFly")"
 	echo -e "\tRemove deleted Docker Images\t\t\t$(_hasFunctionPrint "_backupRemoveImages")"
 	echo
