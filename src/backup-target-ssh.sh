@@ -11,6 +11,10 @@ SSH_CONFIG="-o StrictHostKeyChecking=no -i /root/.ssh/id_rsa"
 SSH="ssh $SSH_CONFIG -p $SSH_PORT"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
+function _backupApiVersion() {
+	echo "1.0.0"
+}
+
 function _backupTestConnection() {
 	if [[ -z "${SSH_HOST}" ]];
 		then echo "SSH_HOST not set" && exit 1;fi

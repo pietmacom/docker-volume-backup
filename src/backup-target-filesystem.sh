@@ -2,6 +2,10 @@ BACKUP_FILESYSTEM_PATH="${BACKUP_FILESYSTEM_PATH:-/archive}"
 BACKUP_FILESYSTEM_UID=${BACKUP_UID:-0}
 BACKUP_FILESYSTEM_GID=${BACKUP_GID:-$BACKUP_UID}
 
+function _backupApiVersion() {
+	echo "1.0.0"
+}
+
 function _backupArchiveOnTheFly() {
 	local _sourcePath="${1}"
 	local _fileName="${2}"

@@ -1,4 +1,8 @@
 
+function _backupApiVersion() {
+	echo "1.0.0"
+}
+
 function _backupTestConnection() {
 	echo "_backupTestConnection"		
 }

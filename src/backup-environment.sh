@@ -2,8 +2,6 @@
 
 source backup.env # Cronjobs don't inherit their env, so load from file
 
-
-
 PRE_BACKUP_COMMAND="${PRE_BACKUP_COMMAND:-}"
 POST_BACKUP_COMMAND="${POST_BACKUP_COMMAND:-}"
 
@@ -43,6 +41,10 @@ INFLUXDB_CREDENTIALS="${INFLUXDB_CREDENTIALS:-}"
 INFLUXDB_MEASUREMENT="${INFLUXDB_MEASUREMENT:-docker_volume_backup}"
 CHECK_HOST="${CHECK_HOST:-"false"}"
 
+# Contants
+API_VERSION="1.0.0"
+
+
 # Preperation
 #
 if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]]; then 
@@ -58,3 +60,9 @@ if [[ ! -e "backup-target-${BACKUP_TARGET}.sh" ]]; then
 	exit 1
 fi
 source "backup-target-${BACKUP_TARGET}.sh"
+
+_hasFunctionOrFail "_backupApiVersion not Implemented by backup target [${BACKUP_TARGET}]" "_backupApiVersion"
+if [[ ! "${API_VERSION}" == "$(_backupApiVersion)" ]]; then
+    _error "Backup target [${BACKUP_TARGET}] implements different API-Version [$(_backupApiVersion)]"
+	exit 1
+fi
