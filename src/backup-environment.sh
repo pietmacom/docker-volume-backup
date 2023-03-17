@@ -41,7 +41,7 @@ INFLUXDB_CREDENTIALS="${INFLUXDB_CREDENTIALS:-}"
 INFLUXDB_MEASUREMENT="${INFLUXDB_MEASUREMENT:-docker_volume_backup}"
 CHECK_HOST="${CHECK_HOST:-"false"}"
 
-# Contants
+# Application Constants
 API_VERSION="1.0.0"
 
 
