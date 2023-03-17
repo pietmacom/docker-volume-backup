@@ -10,7 +10,7 @@ source backup-environment.sh
 _info "Validate settings"
 if [[ ! -z "${BACKUP_NOTIFICATION_URL}" ]] \
 	&& ! docker info 2>&1 > /dev/null; then
-	echo "Can't connect to docker [${DOCKER_SOCK}]"
+	echo "Can't connect to Docker [${DOCKER_SOCK}]"
 	echo "Notifications are send by the containrrr/shoutrrr container and depend on Docker."
 	exit 1
 fi
