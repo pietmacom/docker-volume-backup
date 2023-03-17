@@ -31,7 +31,7 @@ function _backupIncremental() {
 	local _fileName="${2}"
 		
 	echo "Maintain remote increment backup"
-	${SSH_REMOTE} "mkdir -p ${SSH_REMOTE_PATH}/${_fileName}"		
+	mkdir -p ${BACKUP_FILESYSTEM_PATH}/${_fileName}
 	for i in {1..3};
 	do
 		rsync -aviP --stats --delete ${_sourcePath}/ ${BACKUP_FILESYSTEM_PATH}/${_fileName}
@@ -40,8 +40,8 @@ function _backupIncremental() {
 		_info "Repeat ${i} time due to an error"
 		sleep 30
 	done
-	touch ${SSH_REMOTE_PATH}/${_fileName} # make last action visible
-	_metaBackupSize="$(du -bs ${SSH_REMOTE_PATH}/${_fileName} | cut -f1)"
+	touch ${BACKUP_FILESYSTEM_PATH}/${_fileName} # make last action visible
+	_metaBackupSize="$(du -bs ${BACKUP_FILESYSTEM_PATH}/${_fileName} | cut -f1)"
 }
 
 function _backupArchive() {
