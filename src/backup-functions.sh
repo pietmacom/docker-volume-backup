@@ -155,7 +155,7 @@ function _hasFunctionPrint() {
 }
 
 function _backupTargetExplain() {
-	echo -e "Explaine backup target [${BACKUP_TARGET}]:"
+	echo -e "Explain supported actions of backup target [${BACKUP_TARGET}]:"
 	echo -e "\tTest connection\t\t\t\t\t$(_hasFunctionPrint "_backupTestConnection")"
 	echo -e "\tPre-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPreUploadCommand")"
 	echo -e "\tPost-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPostUploadCommand")"
@@ -168,7 +168,7 @@ function _backupTargetExplain() {
 	echo -e "\tRotate Backups By Auantity\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOldest")"
 	echo -e "\tRotate Backups By Age\t\t\t\t$(_hasFunctionPrint "_backupRemoveArchiveOlderThanDays")"
 	echo -e "\tList Backups For Restore\t\t\t$(_hasFunctionPrint "_backupRestoreListFiles")"
-	echo -e "\tRestore Backups\t\t$(_hasFunctionPrint "_backupRestore")"
+	echo -e "\tRestore Backups\t\t\t\t\t$(_hasFunctionPrint "_backupRestore")"
 	echo -e "\tBackup Encrypted Docker Images On-The-Fly\t$(_hasFunctionPrint "_backupImagesEncryptedOnTheFly")"
 	echo -e "\tBackup Docker Images On-The-Fly\t\t\t$(_hasFunctionPrint "_backupImagesOnTheFly")"
 	echo -e "\tRemove deleted Docker Images\t\t\t$(_hasFunctionPrint "_backupRemoveImages")"
@@ -255,7 +255,7 @@ function _backupStrategyValidate() {
 function _backupStrategyExplain() {
 	local _backupStrategyNormalized="$1"
 
-	echo -e "Explained backup strategy:"
+	echo -e "Explain backup strategy:"
 	local _backupStrategyIterationDays=""
 	local _backupStrategyBackupCount="0"
 	for _definition in ${_backupStrategyNormalized}; do
@@ -312,7 +312,7 @@ function _backupStrategyExplain() {
 	
 	if [[ "${_backupStrategyBackupCount}" == "0" ]]; then return 0; fi # Can't calculate with 0
 	
-	echo -e "Examples for storage usage for whole period:"
+	echo -e "Example for storage usage over whole period:"
 	for _example in "10" "100" "1024" "10240" "20480" "40960" "81920" "102400"
 	do
 		local _backupSize="$((${_example} * ${_backupStrategyBackupCount}))"
