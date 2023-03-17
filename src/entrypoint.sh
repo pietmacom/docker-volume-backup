@@ -10,7 +10,7 @@ source backup-environment.sh
 _info "Validate settings"
 if [[ ! -z "${BACKUP_NOTIFICATION_URL}" ]] \
 	&& ! docker info 2>&1 > /dev/null; then
-	echo "Can't connect to docker. Please check mounted socket."
+	echo "Can't connect to docker [${DOCKER_SOCK}]"
 	echo "Notifications are send by the containrrr/shoutrrr container and depend on Docker."
 	exit 1
 fi
@@ -33,7 +33,7 @@ _backupStrategyValidate "${_backupStrategyNormalized}"
 
 _info "Schedule backups"
 echo "Installing cron.d entry: docker-volume-backup"
-echo "${_cronScheduleNormalized} /root/backup.sh 2>&1 | tee /var/log/docker-volume-backup.log > /proc/1/fd/1 2>&1 || /root/backup-notify.sh /var/log/docker-volume-backup.log > /proc/1/fd/1 2>&1" > /var/spool/cron/crontabs/root # Add our cron entry, and direct stdout & stderr to Docker commands stdout
+echo "${_cronScheduleNormalized} set -o pipefail && /root/backup.sh 2>&1 | tee /var/log/docker-volume-backup.log > /proc/1/fd/1 2>&1 || /root/backup-notify.sh /var/log/docker-volume-backup.log > /proc/1/fd/1 2>&1" > /var/spool/cron/crontabs/root # Add our cron entry, and direct stdout & stderr to Docker commands stdout
 
 echo "Starting cron in foreground with expression: ${_cronScheduleNormalized}" # Let cron take the wheel
 crond -f
