@@ -1,0 +1,6 @@
+services:
+  - docker
+
+before_install:
+  - docker build -t pietma/docker-volume-backup
+  - docker ps -a
