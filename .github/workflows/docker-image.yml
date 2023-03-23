@@ -31,3 +31,10 @@ jobs:
         platforms: linux/arm/v6,linux/arm/v7,linux/amd64,linux/arm64
         push: true
         tags: pietmacom/docker-volume-backup:latest
+        
+    - name: Update repo description
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        repository: pietmacom/docker-volume-backup
