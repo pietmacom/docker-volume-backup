@@ -1,6 +1,5 @@
 #!/bin/sh -e
 
-source backup-functions.sh
 source backup-environment.sh
 
 if [[ -z "${BACKUP_NOTIFICATION_URL}" ]]; then

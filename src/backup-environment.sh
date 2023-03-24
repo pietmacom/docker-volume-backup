@@ -1,9 +1,11 @@
 #!/bin/sh -e
 
-source backup.env # Cronjobs don't inherit their env, so load from file
+source backup-functions.sh
 
-PRE_BACKUP_COMMAND="${PRE_BACKUP_COMMAND:-}"
-POST_BACKUP_COMMAND="${POST_BACKUP_COMMAND:-}"
+# User Settings
+#
+BACKUP_PRE_COMMAND="${BACKUP_PRE_COMMAND:-}"
+BACKUP_POST_COMMAND="${BACKUP_POST_COMMAND:-}"
 
 DOCKER_SOCK="${DOCKER_SOCK:-}"
 BACKUP_TARGET="${BACKUP_TARGET:-ssh}"
@@ -17,9 +19,11 @@ BACKUP_ENCRYPT_PASSPHRASE="${BACKUP_ENCRYPT_PASSPHRASE:-}"
 BACKUP_IMAGES="${BACKUP_IMAGES:-false}"
 BACKUP_IMAGES_FILENAME_PREFIX="${BACKUP_IMAGES_FILENAME_PREFIX:-backup-image}"
 
+BACKUP_GROUP="${BACKUP_GROUP:-}"
+
 BACKUP_NOTIFICATION_URL="${BACKUP_NOTIFICATION_URL:-}"
 
-# Application Properties For Customization
+# Behaviour For Customization
 #
 BACKUP_COMPRESS_EXTENSION="${BACKUP_COMPRESS_EXTENSION:-.gz}"
 BACKUP_COMPRESS_PIPE="${BACKUP_COMPRESS_PIPE:-gzip}"
@@ -31,11 +35,15 @@ BACKUP_DECRYPT_PIPE="${BACKUP_DECRYPT_PIPE:-gpg --decrypt --batch --passphrase \
 
 BACKUP_SOURCES="${BACKUP_SOURCES:-/backup}"
 
-# ---
+BACKUP_LABEL_CONTAINER_STOP_DURING="${BACKUP_LABEL_CONTAINER_STOP_DURING:-com.pietma.backup.container.stop-during}"								# docker-volume-backup.stop-during-backup
+BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE="${BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE:-com.pietma.backup.container.exec-command-before}"		# docker-volume-backup.exec-pre-backup
+BACKUP_LABEL_CONTAINER_EXEC_COMMAND_AFTER="${BACKUP_LABEL_CONTAINER_EXEC_COMMAND_AFTER:-com.pietma.backup.container.exec-command-after}" 		# docker-volume-backup.exec-post-backup
+BACKUP_LABEL_GROUP="${BACKUP_LABEL_GROUP:-com.pietma.backup.group}"																				# 
 
+# MISC
+#
 BACKUP_WAIT_SECONDS="${BACKUP_WAIT_SECONDS:-0}"
 BACKUP_HOSTNAME="${BACKUP_HOSTNAME:-$(hostname)}"
-BACKUP_CUSTOM_LABEL="${BACKUP_CUSTOM_LABEL:-}"
 
 INFLUXDB_URL="${INFLUXDB_URL:-}"
 INFLUXDB_DB="${INFLUXDB_DB:-}"
@@ -43,15 +51,15 @@ INFLUXDB_CREDENTIALS="${INFLUXDB_CREDENTIALS:-}"
 INFLUXDB_MEASUREMENT="${INFLUXDB_MEASUREMENT:-docker_volume_backup}"
 CHECK_HOST="${CHECK_HOST:-"false"}"
 
-# Application Constants
-API_VERSION="1.0.0"
+# Constants
+BACKUP_TARGET_API_VERSION="1.0.0"
+BACKUP_STRATEGY_DEFINITION="^(i*[0-9]+)(\*[0-9]+d*)?$"
+
+
 
 
 # Preperation
 #
-if [[ ! -z "${BACKUP_CUSTOM_LABEL}" ]]; then 
-	BACKUP_CUSTOM_LABEL="label=${BACKUP_CUSTOM_LABEL}"
-fi
 _backupStrategyNormalized="$(_backupStrategyNormalize "${BACKUP_STRATEGY}")"
 _cronScheduleNormalized="$(_backupCronNormalize "${BACKUP_STRATEGY}" "${BACKUP_CRON_SCHEDULE}")"
 
@@ -64,7 +72,7 @@ fi
 source "backup-target-${BACKUP_TARGET}.sh"
 
 _hasFunctionOrFail "_backupApiVersion not Implemented by backup target [${BACKUP_TARGET}]" "_backupApiVersion"
-if [[ ! "${API_VERSION}" == "$(_backupApiVersion)" ]]; then
+if [[ ! "${BACKUP_TARGET_API_VERSION}" == "$(_backupApiVersion)" ]]; then
     _error "Backup target [${BACKUP_TARGET}] implements different API-Version [$(_backupApiVersion)]"
 	exit 1
 fi

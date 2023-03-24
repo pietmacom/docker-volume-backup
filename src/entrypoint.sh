@@ -1,10 +1,8 @@
 #!/bin/sh -e
 
 export DOCKER_SOCK="${DOCKER_SOCK:-/var/run/docker.sock}" # Enable docker environment
-env | sed 's/=/="/;s/$/"/' > backup.env # Write cronjob env to file, fill in sensible defaults, and read them back in
+env | sed 's/=/="/;s/$/"/' > backup-cronjob.env # Write cronjob env to file, fill in sensible defaults, and read them back in
 
-
-source backup-functions.sh
 source backup-environment.sh
 
 _info "Validate settings"

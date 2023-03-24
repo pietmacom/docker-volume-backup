@@ -1,6 +1,6 @@
 # Environment
-PRE_SSH_COMMAND="${PRE_SSH_COMMAND:-}"
-POST_SSH_COMMAND="${POST_SSH_COMMAND:-}"
+SSH_PRE_COMMAND="${SSH_PRE_COMMAND:-}"
+SSH_POST_COMMAND="${SSH_POST_COMMAND:-}"
 SSH_HOST="${SSH_HOST:-}"
 SSH_PORT="${SSH_PORT:-22}"
 SSH_USER="${SSH_USER:-}"
@@ -24,19 +24,19 @@ function _backupTestConnection() {
 }
 
 function _backupPreUploadCommand() {
-	if [ ! -z "$PRE_SSH_COMMAND" ];
+	if [ ! -z "$SSH_PRE_COMMAND" ];
 	then
-		echo "Pre-SSH command: $PRE_SSH_COMMAND"
-		${SSH_REMOTE} ${PRE_SSH_COMMAND}
+		echo "Pre-SSH command: $SSH_PRE_COMMAND"
+		${SSH_REMOTE} ${SSH_PRE_COMMAND}
 	fi
 	echo "Will upload to ${SSH_USER}@${SSH_HOST}:${SSH_PORT}${SSH_REMOTE_PATH}"
 }
 
 function _backupPostUploadCommand() {
-	if [ ! -z "$POST_SSH_COMMAND" ];
+	if [ ! -z "$SSH_POST_COMMAND" ];
 	then
-		echo "Post-SSH command: $POST_SSH_COMMAND"
-		${SSH_REMOTE} ${POST_SSH_COMMAND}
+		echo "Post-SSH command: $SSH_POST_COMMAND"
+		${SSH_REMOTE} ${SSH_POST_COMMAND}
 	fi
 }
 

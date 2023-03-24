@@ -1,6 +1,5 @@
 #!/bin/sh -e
 
-source backup-functions.sh
 source backup-environment.sh
 
 _backupTargetExplain

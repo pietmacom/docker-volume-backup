@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-BACKUP_DEFINITION="^(i*[0-9]+)(\*[0-9]+d*)?$"
-
 function _info {
   local _bold="\e[1m"
   local _reset="\e[0m"
@@ -187,14 +185,14 @@ function _backupStrategyNormalize() {
 	
 	local _backupStrategyNormalized=""	
 	for _definition in ${_backupStrategy}; do
-		if [[ ! "${_definition}" =~ ${BACKUP_DEFINITION} ]];
+		if [[ ! "${_definition}" =~ ${BACKUP_STRATEGY_DEFINITION} ]];
 		then
 			_error "Strategy definition incorrect [${_definition}].\nAllowed defintions:\n\t1\n\t1*7\n\t1*7d\n\ti1\n\ti1*7\n\ti1*7d"
 			exit 1
 		fi
 
-		local _iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
-		local _retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+		local _iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\1|g")
+		local _retention=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\2|g" | sed 's|^\*||')
 		local _iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 		
 		if [[ -z "${_retention}" ]];
@@ -217,8 +215,8 @@ function _backupStrategyValidate() {
 	local _backupStrategyNormalized="$1"
 	
 	for _definition in ${_backupStrategyNormalized}; do
-		_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
-		_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+		_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\1|g")
+		_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\2|g" | sed 's|^\*||')
 		
 		if [[ "${_iteration}" == "i"* ]]; then 
 			_hasFunctionOrFail "_backupIncremental not Implemented by backup target [${BACKUP_TARGET}]" "_backupIncremental";	
@@ -259,8 +257,8 @@ function _backupStrategyExplain() {
 	local _backupStrategyIterationDays=""
 	local _backupStrategyBackupCount="0"
 	for _definition in ${_backupStrategyNormalized}; do
-		local _iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
-		local _retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+		local _iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\1|g")
+		local _retention=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\2|g" | sed 's|^\*||')
 		local _iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 		local _retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 

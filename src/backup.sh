@@ -1,7 +1,6 @@
 #!/bin/sh -e
 
-source backup-functions.sh
-source backup-environment.sh # Cronjobs don't inherit their env, so load from file
+source backup-environment.sh
 
 # Main
 #
@@ -27,7 +26,11 @@ fi
 _info "Start backup"
 _metaBackupStart="$(date +%s)"
 if [ -S "$DOCKER_SOCK" ]; then
-	_containersToStop="$(_dockerContainerFilter "status=running" "label=docker-volume-backup.stop-during-backup=true" "${BACKUP_CUSTOM_LABEL}")"
+	_backupGroupFilter=""
+	if [[ ! -z "${BACKUP_GROUP}" ]]; then 
+		_backupGroupFilter="label=${BACKUP_LABEL_GROUP}=${BACKUP_GROUP}"
+	fi	
+	_containersToStop="$(_dockerContainerFilter "status=running" "label=${BACKUP_LABEL_CONTAINER_STOP_DURING}" "${_backupGroupFilter}")"
 	_containersToStopCount="$(echo "${_containersToStop}" | wc -l)"
 	_containersCount="$(docker ps --format "{{.ID}}" | wc -l)"
 
@@ -39,9 +42,9 @@ else
   echo "Cannot access \"$DOCKER_SOCK\", won't look for containers to stop"
 fi
 
-_dockerExecLabel "Run Pre-Backup command in containers" "docker-volume-backup.exec-pre-backup"
+_dockerExecLabel "Run Pre-Backup command in containers" "${BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE}"
 _docker "Stop containers" "stop" "${_containersToStop}"
-_exec "Run Pre-Backup command" "$PRE_BACKUP_COMMAND"
+_exec "Run Pre-Backup command" "$BACKUP_PRE_COMMAND"
 
 _execFunction "Test connection" "_backupTestConnection"
 _execFunction "Run Pre-Upload command" "_backupPreUploadCommand"
@@ -125,8 +128,8 @@ _metaTimeUploadedEnd="$(date +%s)"
 
 _execFunction "Run Post-Upload command" "_backupPostUploadCommand"
 _docker "Start containers" "start" "${_containersToStop}"
-_dockerExecLabel "Run Post-Backup command in containers" "docker-volume-backup.exec-post-backup"
-_exec "Run Post-backup command" "$POST_BACKUP_COMMAND"
+_dockerExecLabel "Run Post-Backup command in containers" "${BACKUP_LABEL_CONTAINER_EXEC_COMMAND_AFTER}"
+_exec "Run Post-backup command" "$BACKUP_POST_COMMAND"
 _metaBackupEnd="$(date +%s)"
 
 

@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-source backup-functions.sh
+source backup-cronjob.env # Cronjobs don't inherit their env, so load from file
 source backup-environment.sh
 
 _backupLog="/var/log/docker-volume-backup.log"
