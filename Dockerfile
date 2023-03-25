@@ -1,7 +1,7 @@
 FROM alpine:latest
 
-RUN apk update
-RUN apk add docker-cli gpg openssh-client curl rsync
+RUN apk update && \
+	apk add docker-cli gpg openssh-client curl rsync
 
 COPY ./src/*.sh /root/
 RUN chmod ugo+x /root/*.sh
