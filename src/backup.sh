@@ -58,8 +58,8 @@ sleep "${BACKUP_WAIT_SECONDS}"
 _metaTimeUploadStart="$(date +%s)"
 _backupStrategyIterationDays=""
 for _definition in ${_backupStrategyNormalized}; do
-	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\1|g")
-	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_DEFINITION}|\2|g" | sed 's|^\*||')
+	_iteration=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\1|g")
+	_retention=$(echo "${_definition}" | sed -r "s|${BACKUP_STRATEGY_DEFINITION}|\2|g" | sed 's|^\*||')
 	_iterationNumber="$(echo "${_iteration}" | sed 's|^i||')"
 	_retentionNumber="$(echo "${_retention}" | sed 's|d$||')"
 	
