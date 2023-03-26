@@ -31,7 +31,7 @@ BACKUP_ENCRYPT_EXTENSION="${BACKUP_ENCRYPT_EXTENSION:-.gpg}"
 BACKUP_ENCRYPT_PIPE="${BACKUP_ENCRYPT_PIPE:-gpg --symmetric --cipher-algo aes256 --batch --passphrase \"${BACKUP_ENCRYPT_PASSPHRASE}\"}"
 BACKUP_DECRYPT_PIPE="${BACKUP_DECRYPT_PIPE:-gpg --decrypt --batch --passphrase \"${BACKUP_ENCRYPT_PASSPHRASE}\"}"
 
-BACKUP_SOURCES="${BACKUP_SOURCES:-/backup}"
+BACKUP_SOURCES="${BACKUP_SOURCES:-/volumes}"
 
 BACKUP_LABEL_CONTAINER_STOP_DURING="${BACKUP_LABEL_CONTAINER_STOP_DURING:-com.pietma.backup.container.stop-during}"								# docker-volume-backup.stop-during-backup
 BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE="${BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE:-com.pietma.backup.container.exec-command-before}"		# docker-volume-backup.exec-pre-backup
