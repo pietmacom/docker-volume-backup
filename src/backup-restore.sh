@@ -20,7 +20,7 @@ _hasFunctionOrFail "_backupRestore not Implemented by backup target [${BACKUP_TA
 
 _info "Cleanup existing volumes"
 echo "Found volumes..."
-ls -1d /backup/*
+ls -1d ${BACKUP_SOURCES}/*
 echo "Size $(du -sh ${_backupRestorTarget})"
 sleep 3
 
