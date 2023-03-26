@@ -39,7 +39,7 @@ if [ -S "$DOCKER_SOCK" ]; then
 else
   _containersToStop="0"
   _containersCount="0"
-  echo "Cannot access \"$DOCKER_SOCK\", won't look for containers to stop"
+  echo "Cannot access Docker Socker [\"$DOCKER_SOCK\"], won't look for containers to stop"
 fi
 
 _dockerExecLabel "Run Pre-Backup command in containers" "${BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE}"
