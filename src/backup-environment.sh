@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-source backup-functions.sh
-
 # User Settings
 #
 BACKUP_PRE_COMMAND="${BACKUP_PRE_COMMAND:-}"
@@ -56,7 +54,7 @@ BACKUP_TARGET_API_VERSION="1.0.0"
 BACKUP_STRATEGY_DEFINITION="^(i*[0-9]+)(\*[0-9]+d*)?$"
 
 
-
+source backup-functions.sh
 
 # Preperation
 #
