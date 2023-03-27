@@ -13,7 +13,6 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  - Override backup target (@see backup-target-ssh.sh)
  - Prefixed environment variables
  - Start Stop containers
- 
  - Works without docker
  
 ## Backup
