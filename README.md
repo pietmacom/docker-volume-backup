@@ -43,6 +43,8 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  
 ## Environment (defaults)
 
+Backup settings
+
  - BACKUP_GROUP=""
  - BACKUP_TARGET="ssh"
  - BACKUP_CRON_SCHEDULE="0 9 * * *" 
@@ -53,11 +55,13 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  - BACKUP_IMAGES="false"
  - BACKUP_ENCRYPT_PASSPHRASE=""
 
+Filenames
 
  - BACKUP_FILENAME_PREFIX="backup-volume"
  - BACKUP_FILENAME="${BACKUP_FILENAME_PREFIX}-%Y-%m-%dT%H-%M-%S"
  - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
 
+Metrics
 
  - INFLUXDB_URL=""
  - INFLUXDB_DB=""
@@ -87,7 +91,7 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  - BACKUP_ENCRYPT_EXTENSION=".gpg"
  - BACKUP_ENCRYPT_PIPE="gpg --symmetric --cipher-algo aes256 --batch --passphrase \"${BACKUP_ENCRYPT_PASSPHRASE}\""
  - BACKUP_DECRYPT_PIPE="gpg --decrypt --batch --passphrase \"${BACKUP_ENCRYPT_PASSPHRASE}\""
- - BACKUP_SOURCES="/backup"
+ - BACKUP_SOURCES="/volumes"
  - BACKUP_LABEL_CONTAINER_STOP_DURING="com.pietma.backup.container.stop-during"
  - BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE="com.pietma.backup.container.exec-command-before"
  - BACKUP_LABEL_CONTAINER_EXEC_COMMAND_AFTER="com.pietma.backup.container.exec-command-after"
