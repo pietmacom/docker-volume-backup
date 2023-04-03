@@ -43,18 +43,22 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  
 ## Environment (defaults)
 
- - DOCKER_SOCK="/var/run/docker.sock"
+ - BACKUP_GROUP=""
  - BACKUP_TARGET="ssh"
  - BACKUP_CRON_SCHEDULE="0 9 * * *" 
  - BACKUP_STRATEGY="0*10d"
- - BACKUP_ONTHEFLY="true"
- - BACKUP_FILENAME_PREFIX="backup-volume"
- - BACKUP_FILENAME="${BACKUP_FILENAME_PREFIX}-%Y-%m-%dT%H-%M-%S"
- - BACKUP_ENCRYPT_PASSPHRASE="" 
- - BACKUP_IMAGES="false"
- - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
  - BACKUP_PRE_COMMAND=""
  - BACKUP_POST_COMMAND=""
+ - BACKUP_ONTHEFLY="true"
+ - BACKUP_IMAGES="false"
+ - BACKUP_ENCRYPT_PASSPHRASE=""
+
+
+ - BACKUP_FILENAME_PREFIX="backup-volume"
+ - BACKUP_FILENAME="${BACKUP_FILENAME_PREFIX}-%Y-%m-%dT%H-%M-%S"
+ - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
+
+
  - INFLUXDB_URL=""
  - INFLUXDB_DB=""
  - INFLUXDB_CREDENTIALS=""
@@ -74,8 +78,9 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
 
  - BACKUP_FILESYSTEM_PATH="/archive"
 
-### Customization
+### Customization Internals
 
+ - DOCKER_SOCK="/var/run/docker.sock"
  - BACKUP_COMPRESS_EXTENSION=".gz"
  - BACKUP_COMPRESS_PIPE="gzip"
  - BACKUP_DECOMPRESS_PIPE="gzip -d"
