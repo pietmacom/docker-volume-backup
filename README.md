@@ -33,7 +33,7 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
 ## Examples
 ## Explain backup procedure
 ```shell
-foo@bar:~$ docker exec -it docker-volume-backup /root/backup-strategy-explain.sh
+foo@bar:~$ docker exec -it docker-volume-backup /root/backup-strategy-explain.sh "i1 7 4 6*2"
 
 Normalized backup strategy definition:
         i1*7 7*4 4*6 6*2 (given: i1 7 4 6*2)
