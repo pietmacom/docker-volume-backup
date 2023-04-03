@@ -7,9 +7,7 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
 
  - Explains set backup procedure
  - Validates set backup procedure
- - Start Stop containers
  - Works without docker
- - Send notification (Mail, Telegram, Pushover...) - (@see [https://github.com/containrrr/shoutrrr](https://containrrr.dev/shoutrrr/latest/services/email/))
  - Send metrics to InfluxDB
   - Prefixed environment variables
 
@@ -26,14 +24,19 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  - Backup simple archives 
  - Rotate Backup-Files
  - Iterative Backups
- - Backup To Archive first - short downtime for stopped containers (1. Archive,  2. Compress > Encrypt > Upload)
+ - Backup To Archive first - short downtime for stopped services/container (1. Archive,  2. Compress > Encrypt > Upload)
  - Backup On-The-Fly (Archive > Compress > Encrypt > Upload)
- - Backup Docker Images
  - Supported targets
    - Filesystem 
    - SSH
      - PKI Authentification
      - Pre/Post-Command
+ - Docker-Container
+   - Start Stop containers
+   - Backup labeled groups
+   - Backup Docker-Images
+   - Send notification (Mail, Telegram, Pushover...) - (@see [https://github.com/containrrr/shoutrrr](https://containrrr.dev/shoutrrr/latest/services/email/))
+   
 
 ***Restore***
 
