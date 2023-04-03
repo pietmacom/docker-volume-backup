@@ -80,7 +80,7 @@ Metrics
  
 ### filesystem (BACKUP_TARGET="filesystem")
 
- - BACKUP_FILESYSTEM_PATH="/archive"
+ - BACKUP_FILESYSTEM_PATH="/backups"
 
 ### Customization Internals
 
