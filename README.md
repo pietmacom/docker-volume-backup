@@ -10,10 +10,10 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  - Run without Docker
  - Send metrics to InfluxDB
  - *Docker*
-   - Define behaviour at Container
-     - Stop Container before and Sart it after backup
-   - Backup grouped Containers
-   - Backup Images   
+   - Set behaviour by Docker-Labels
+     - Stop container before and Start it after backup
+     - Filter treadet Containers by Group-Name
+   - Backup all Images   
  - *Backup*
    - Follow Backup-Strategy (@see [https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien](https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien))
    - Create simple archives 
