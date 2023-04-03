@@ -4,43 +4,40 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
 
 
 # Features
-
- - Explains set backup procedure
- - Validates set backup procedure
- - Works without docker
+ - Explain backup strategy
+ - Validates backup strategy
+ - Clear environment variable naming
+ - Run without Docker
  - Send metrics to InfluxDB
-  - Prefixed environment variables
+ - *Docker*
+   - Define behaviour at Container
+     - Stop Container before and Sart it after backup
+   - Backup grouped Containers
+   - Backup Images   
+ - *Backup*
+   - Follow Backup-Strategy (@see [https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien](https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien))
+   - Create simple archives 
+   - Create iterative Backups
+   - Rotate Backup-Files
+   - Backup To Archive first - short downtime for stopped services/container (1. Archive,  2. Compress > Encrypt > Upload)
+   - Backup On-The-Fly (Archive > Compress > Encrypt > Upload)
+   - Include targets
+     - Filesystem 
+     - SSH
+       - PKI Authentification
+       - Pre/Post-Command   
+ - *Restore*
+   - List Backups
+   - Restore On-The-Fly
+ - *Customize Internals*
+    - Use your compression (Pipe + Extension)
+    - Use your encryption (Pipe + Extension)
+    - Use your Docker-Labels
+    - Create own target (@see backup-target-ssh.sh)
 
-***Customization***
-
- - Use your compression (Pipe + Extension)
- - Use your encryption (Pipe + Extension)
- - Use your docker labels
- - Create own target (@see backup-target-ssh.sh)
- 
-***Backup***
-
- - Backup-Strategy (@see [https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien](https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien))
- - Backup simple archives 
- - Rotate Backup-Files
- - Iterative Backups
- - Backup To Archive first - short downtime for stopped services/container (1. Archive,  2. Compress > Encrypt > Upload)
- - Backup On-The-Fly (Archive > Compress > Encrypt > Upload)
- - Supported targets
-   - Filesystem 
-   - SSH
-     - PKI Authentification
-     - Pre/Post-Command
- - Docker-Container
-   - Start Stop containers
-   - Backup labeled groups
-   - Backup Docker-Images
-   - Send notification (Mail, Telegram, Pushover...) - (@see [https://github.com/containrrr/shoutrrr](https://containrrr.dev/shoutrrr/latest/services/email/))
-   
-
-***Restore***
-
-- On-The-Fly Restore
+### Docker-Container
+- Runs Cronjob
+- Send notification (Mail, Telegram, Pushover...) - (@see [https://github.com/containrrr/shoutrrr](https://containrrr.dev/shoutrrr/latest/services/email/))
 
 # Examples
 
@@ -98,12 +95,12 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - INFLUXDB_CREDENTIALS=""
  - INFLUXDB_MEASUREMENT="docker_volume_backup"
 
-##  Settings For Docker-Container
+## Docker-Container
 
  - BACKUP_CRON_SCHEDULE="0 9 * * *" 
- - BACKUP_GROUP=""
- - BACKUP_IMAGES="false"
  - BACKUP_NOTIFICATION_URL=""
+ - BACKUP_IMAGES="false"
+ - BACKUP_GROUP=""
 
 ***Labels***
 
