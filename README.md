@@ -3,35 +3,45 @@
 On-The-Fly backups stop writing backups to your storage before it gets uploaded. That extends the life of SSDs and SD-Cards.
 
 
-## General
+# Features
 
  - Explains set backup procedure
  - Validates set backup procedure
- - Send metrics to InfluxDB
- - Override compression (Pipe + Extension)
- - Override encryption (Pipe + Extension)
- - Override backup target (@see backup-target-ssh.sh)
- - Prefixed environment variables
  - Start Stop containers
  - Works without docker
+ - Send notification (Mail, Telegram, Pushover...) - (@see [https://github.com/containrrr/shoutrrr](https://containrrr.dev/shoutrrr/latest/services/email/))
+ - Send metrics to InfluxDB
+  - Prefixed environment variables
+
+***Customization***
+
+ - Use your compression (Pipe + Extension)
+ - Use your encryption (Pipe + Extension)
+ - Use your docker labels
+ - Create own target (@see backup-target-ssh.sh)
  
-## Backup
+***Backup***
 
- - Support Backup by strategy (@see https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien)
- - Support Simple backup
- - Support Rotate backup-Files
+ - Backup-Strategy (@see [https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien](https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien))
+ - Backup simple archives 
+ - Rotate Backup-Files
  - Iterative Backups
- - Backup to Archive first, Compress And Upload Second (for little downtimes)
- - Support Backup On-The-Fly
- - Support Compress, Encrypt and Upload Backup On-The-Fly 
- - Support Backup Docker Images
+ - Backup To Archive first - short downtime for stopped containers (1. Archive,  2. Compress > Encrypt > Upload)
+ - Backup On-The-Fly (Archive > Compress > Encrypt > Upload)
+ - Backup Docker Images
  - Supported targets
-  - SSH
-   - PKI Authentification
-   - Pre/Post-Command
+   - Filesystem 
+   - SSH
+     - PKI Authentification
+     - Pre/Post-Command
 
-## Examples
-## Explain backup procedure
+***Restore***
+
+- On-The-Fly Restore
+
+# Examples
+
+***Explain Backup Procedure***
 ```shell
 foo@bar:~$ docker exec -it docker-volume-backup /root/backup-strategy-explain.sh "i1 7 4 6*2"
 
@@ -54,7 +64,8 @@ Examples for storage usage for whole period:
         13 Backups * 80 GB      => 1064960 MB / 1040.00 GB / 1.02 TB
         13 Backups * 100 GB     => 1331200 MB / 1300.00 GB / 1.27 TB
 ```
-## Restore Backup
+
+***Restore Backup***
 ```shell
 foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh
 
@@ -66,12 +77,8 @@ drwxr-xr-x 8 user group 4.0K Mar 15 20:52 backup-volume-i1r7-202310
 
 foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-volume-i7r28-202310.tar.gz
 ```
-## Restore
 
- - On-The-Fly Restore
-
-## Settings
-### General
+# Settings
 
  - BACKUP_TARGET="ssh"
  - BACKUP_STRATEGY="0*10d"
@@ -79,28 +86,23 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - BACKUP_ENCRYPT_PASSPHRASE=""
  - BACKUP_PRE_COMMAND=""
  - BACKUP_POST_COMMAND=""
-
-#### Filenames
-
- - BACKUP_FILENAME_PREFIX="backup-volume"
  - BACKUP_FILENAME="${BACKUP_FILENAME_PREFIX}-%Y-%m-%dT%H-%M-%S"
- - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
 
-#### Metrics
+***Metrics***
 
  - INFLUXDB_URL=""
  - INFLUXDB_DB=""
  - INFLUXDB_CREDENTIALS=""
  - INFLUXDB_MEASUREMENT="docker_volume_backup"
 
-## Docker/Container
+##  Settings For Docker-Container
 
  - BACKUP_CRON_SCHEDULE="0 9 * * *" 
  - BACKUP_GROUP=""
  - BACKUP_IMAGES="false"
  - BACKUP_NOTIFICATION_URL=""
 
-### Labels
+***Labels***
 
  - com.pietma.backup.container.stop-during
  - com.pietma.backup.container.exec-command-before=/bin/sh -c "echo 'working' && sleep 1 &&  echo 'done'"
@@ -121,9 +123,12 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - BACKUP_LABEL_CONTAINER_EXEC_COMMAND_BEFORE="com.pietma.backup.container.exec-command-before"
  - BACKUP_LABEL_CONTAINER_EXEC_COMMAND_AFTER="com.pietma.backup.container.exec-command-after"
  - BACKUP_LABEL_GROUP="com.pietma.backup.group"		
+ - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
+ - BACKUP_FILENAME_PREFIX="backup-volume"
 
-## Targets
-### ssh (BACKUP_TARGET="ssh")
+# Targets
+
+***ssh***
 
  - SSH_PRE_COMMAND=""
  - SSH_POST_COMMAND=""
@@ -132,13 +137,13 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - SSH_USER=""
  - SSH_REMOTE_PATH="."
  
-### filesystem (BACKUP_TARGET="filesystem")
+***filesystem***
 
  - BACKUP_FILESYSTEM_PATH="/backups"
  
  # What's up next?
   - [ ] Backup volumes by label (without dedicated mount)
-   - [ ] Add Setting to backup all volumes - exception by labels - or backup specified volumes - by labels
+    - [ ] Add Setting to backup all volumes - exception by labels - or backup specified volumes - by labels
   - [ ] Only stop containers which are backed up at the moment
   
   
