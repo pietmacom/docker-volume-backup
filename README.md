@@ -4,7 +4,7 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
 
 
 # Features
- - Explain backup strategy
+ - Explains backup strategy
  - Validates backup strategy
  - Clear environment variable naming
  - Run without Docker
