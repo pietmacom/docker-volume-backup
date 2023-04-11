@@ -152,8 +152,8 @@ function _hasFunctionPrint() {
 	fi
 }
 
-function _backupTargetExplain() {
-	echo -e "Explain supported actions by backup target [${BACKUP_TARGET}]:"
+function _backupTargetDescribe() {
+	echo -e "Describe supported actions by backup target [${BACKUP_TARGET}]:"
 	echo -e "\tTest connection\t\t\t\t\t$(_hasFunctionPrint "_backupTestConnection")"
 	echo -e "\tPre-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPreUploadCommand")"
 	echo -e "\tPost-Upload Command\t\t\t\t$(_hasFunctionPrint "_backupPostUploadCommand")"
@@ -250,10 +250,10 @@ function _backupStrategyValidate() {
 	fi
 }
 
-function _backupStrategyExplain() {
+function _backupStrategyDescribe() {
 	local _backupStrategyNormalized="$1"
 
-	echo -e "Explain backup strategy:"
+	echo -e "Describe backup strategy:"
 	local _backupStrategyIterationDays=""
 	local _backupStrategyBackupCount="0"
 	for _definition in ${_backupStrategyNormalized}; do
@@ -303,7 +303,7 @@ function _backupStrategyExplain() {
 		else
 			_backupsCount="${_retentionNumber}"
 		fi
-		echo "(${_backupsCount} Backups)"
+		echo "(${_backupsCount} copies)"
 		_backupStrategyBackupCount="$((${_backupStrategyBackupCount} + ${_backupsCount}))"
 	done
 	echo

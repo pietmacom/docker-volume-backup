@@ -4,7 +4,8 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
 
 
 # Features
- - Explains backup strategy
+ - Very small foodprint (~20MByte)
+ - Describe backup strategy
  - Validates backup strategy
  - Clear environment variable naming
  - Run without Docker
@@ -36,23 +37,23 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
     - Create own target (@see backup-target-ssh.sh)
 
 ### Docker-Container
-- Runs Cronjob
+- Run by crond
 - Send notification (Mail, Telegram, Pushover...) - (@see [https://github.com/containrrr/shoutrrr](https://containrrr.dev/shoutrrr/latest/services/email/))
 
 # Examples
 
-***Explain Backup Procedure***
+***Describe Backup Procedure***
 ```shell
-foo@bar:~$ docker exec -it docker-volume-backup /root/backup-strategy-explain.sh "i1 7 4 6*2"
+foo@bar:~$ docker exec -it docker-volume-backup /root/backup-strategy-describe.sh "i1 7 4 6*2"
 
 Normalized backup strategy definition:
         i1*7 7*4 4*6 6*2 (given: i1 7 4 6*2)
 
-Explained backup strategy:
-        i1*7    => Backup - changes - every 1. days and keep last 7 backups for 7 days (1 Backups)
-        7*4     => Backup every 7. days and keep last 4 backups for 28 days (4 Backups)
-        4*6     => Backup every 28. days and keep last 6 backups for 168 days (6 Backups)
-        6*2     => Backup every 168. days and keep last 2 backups for 336 days (2 Backups)
+Describe backup strategy:
+        i1*7    => Backup - changes - every 1. days and keep last 7 backups for 7 days (1 copies)
+        7*4     => Backup every 7. days and keep last 4 backups for 28 days (4 copies)
+        4*6     => Backup every 28. days and keep last 6 backups for 168 days (6 copies)
+        6*2     => Backup every 168. days and keep last 2 backups for 336 days (2 copies)
 
 Examples for storage usage for whole period:
         13 Backups * 10 MB      => 130 MB / 0.13 GB

@@ -5,7 +5,7 @@ source backup-environment.sh
 # Main
 #
 _info "Validate backup strategy"
-_backupStrategyExplain "${_backupStrategyNormalized}"
+_backupStrategyDescribe "${_backupStrategyNormalized}"
 _backupStrategyValidate "${_backupStrategyNormalized}"
 
 
