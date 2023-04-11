@@ -313,20 +313,33 @@ function _backupStrategyDescribe() {
 	echo -e "Example for storage usage over whole period:"
 	for _example in "10" "100" "1024" "10240" "20480" "40960" "81920" "102400"
 	do
-		local _backupSize="$((${_example} * ${_backupStrategyBackupCount}))"
-		echo -n -e "\t${_backupStrategyBackupCount} Backups * "
-		if [[ ${_example} -lt 1024 ]]; then echo -n "${_example} MB";
-		elif [[ ${_example} -lt 1024000 ]]; then awk "BEGIN { printf \"%.0f GB\", (${_example}/1024) }";
-		else awk "BEGIN { printf \"%.0f TB\", (${_example}/1024/1024) }";
+		echo -n -e "\t"
+		_backupStrategyStorageUsageDescribe "${_example}"	
+	done
+	echo
+	
+	if [[ "${BACKUP_STRATEGY_DESCRIBE_STORAGEUSAGE_PRESENT}" == "true" ]]; then
+		echo -e "Present storage usage over whole period:"
+		echo -n -e "\t"
+		_backupStrategyStorageUsageDescribe "$(du -slm ${BACKUP_SOURCES} | cut -f 1)"	
+	fi
+	echo
+}
+
+function _backupStrategyStorageUsageDescribe() {
+		local _volumesSize="$1" # Size in kilobytes
+		echo -n -e "${_backupStrategyBackupCount} Backups * "
+		if [[ ${_volumesSize} -lt 1024 ]]; then echo -n "${_volumesSize} MB";
+		elif [[ ${_volumesSize} -lt 1024000 ]]; then awk "BEGIN { printf \"%.0f GB\", (${_volumesSize}/1024) }";
+		else awk "BEGIN { printf \"%.0f TB\", (${_volumesSize}/1024/1024) }";
 		fi
 		echo -n -e " \t=> "
 
-		echo -n "${_backupSize} MB"
-		if [[ ${_backupSize} -gt 100 ]]; then awk "BEGIN { printf \" / %.2f GB\", (${_backupSize}/1024) }"; fi
-		if [[ ${_backupSize} -gt 10240 ]]; then awk "BEGIN { printf \" / %.2f TB\", (${_backupSize}/1024/1024) }"; fi
+		local _copiesSize="$((${_volumesSize} * ${_backupStrategyBackupCount}))"
+		echo -n "${_copiesSize} MB"
+		if [[ ${_copiesSize} -gt 100 ]]; then awk "BEGIN { printf \" / %.2f GB\", (${_copiesSize}/1024) }"; fi
+		if [[ ${_copiesSize} -gt 10240 ]]; then awk "BEGIN { printf \" / %.2f TB\", (${_copiesSize}/1024/1024) }"; fi
 		echo -n -e "\n"
-	done
-	echo
 }
 
 #_cron="5 9 *   *   *"
