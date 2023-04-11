@@ -322,8 +322,8 @@ function _backupStrategyDescribe() {
 		echo -e "Present storage usage over whole period:"
 		echo -n -e "\t"
 		_backupStrategyStorageUsageDescribe "$(du -slm ${BACKUP_SOURCES} | cut -f 1)"	
+		echo
 	fi
-	echo
 }
 
 function _backupStrategyStorageUsageDescribe() {
