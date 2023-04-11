@@ -5,11 +5,15 @@ env | sed 's/=/="/;s/$/"/' > cronjob.env # Write cronjob env to file, fill in se
 source backup-environment.sh
 
 _info "Validate settings"
-if [[ ! -z "${BACKUP_NOTIFICATION_URL}" ]] \
-	&& ! docker info 2>&1 > /dev/null; then
-	echo "Can't connect to Docker [${DOCKER_SOCK}]"
-	echo "Notifications are send by the containrrr/shoutrrr container and depend on Docker."
-	exit 1
+if [[ ! -z "${BACKUP_NOTIFICATION_URL}" ]]; then
+	if ! docker info 2>&1 > /dev/null; then
+		echo "Can't connect to Docker [${DOCKER_SOCK}]"
+		echo "Notifications are send by the containrrr/shoutrrr container and depend on Docker."
+		exit 1
+	fi
+	
+	_info "Prepare for notifications"	
+	${BACKUP_NOTIFICATION_PREPARE_COMMAND}
 fi
 
 

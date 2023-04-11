@@ -12,4 +12,5 @@ if [[ -z "${DOCKER_SOCK}" ]]; then
 	exit 1
 fi
 
+${BACKUP_NOTIFICATION_PREPARE_COMMAND}
 docker run -t --rm containrrr/shoutrrr send --url "${BACKUP_NOTIFICATION_URL}" --message "Test Message arrived! - $(date)"		
