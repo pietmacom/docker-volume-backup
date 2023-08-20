@@ -1,0 +1,21 @@
+version: "1"
+
+
+services:
+  docker-volume-backup:
+    build: https://github.com/pietmacom/docker-volume-backup.git#master
+    restart: "unless-stopped"
+    
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      
+      - /root/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - /backmeup:/volumes/backmeup
+      
+    environment:
+     - BACKUP_TARGET=ssh
+     - SSH_HOST=backup.myhost.com
+     - SSH_USER=remote_username
+     - SSH_REMOTE_PATH=/media/data/backups/backupdir
+     
