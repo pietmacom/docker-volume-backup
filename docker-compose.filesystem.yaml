@@ -1,0 +1,17 @@
+version: "1"
+
+
+services:
+  docker-volume-backup:
+    build: https://github.com/pietmacom/docker-volume-backup.git#master
+    restart: "unless-stopped"
+    
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      
+      - /backmeup:/volumes/backmeup
+      - /media/data/backups:/backups
+      
+    environment:
+     - BACKUP_TARGET=filesystem
