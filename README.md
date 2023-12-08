@@ -79,7 +79,7 @@ drwxr-xr-x 8 user group 4.0K Mar 15 20:52 backup-volume-i1r7-202310
 foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-volume-i7r28-202310.tar.gz
 ```
 
-# Settings
+# General Settings
 
  - BACKUP_TARGET="ssh"
  - BACKUP_STRATEGY="0*10d"
@@ -110,7 +110,7 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - com.pietma.backup.container.exec-command-after=/bin/sh -c "echo 'working' && sleep 1 &&  echo 'done'"
  - com.pietma.backup.group="What-Ever-You-Like"
 
-## Customize Internals
+## Customize Internal Settings
 
  - DOCKER_SOCK="/var/run/docker.sock"
  - BACKUP_COMPRESS_EXTENSION=".gz"
@@ -127,7 +127,7 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - BACKUP_IMAGES_FILENAME_PREFIX="backup-image"
  - BACKUP_FILENAME_PREFIX="backup-volume"
 
-# Targets
+# Targets Settings
 
 ***ssh***
 
