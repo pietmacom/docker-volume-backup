@@ -8,19 +8,19 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
  - Describe backup strategy
  - Validates backup strategy
  - Clear environment variable naming
- - Run without Docker
+ - Can be run without Docker
  - Send metrics to InfluxDB
  - *Docker*
    - Set behaviour by Docker-Labels
      - Stop container before and Start it after backup
-     - Filter treadet Containers by Group-Name
+     - Filter treated Containers by Group-Name
    - Backup all Images   
  - *Backup*
    - Follow Backup-Strategy (@see [https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien](https://de.wikipedia.org/wiki/Datensicherung#Backupstrategien))
    - Create simple archives 
    - Create iterative Backups
    - Rotate Backup-Files
-   - Backup To Archive first - short downtime for stopped services/container (1. Archive,  2. Compress > Encrypt > Upload)
+   - Backup To Archive first - short downtime for stopped services/container (1st: Archive,  2nd: Compress > Encrypt > Upload)
    - Backup On-The-Fly (Archive > Compress > Encrypt > Upload)
    - Include targets
      - Filesystem 
@@ -31,9 +31,9 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
    - List Backups
    - Restore On-The-Fly
  - *Customize Internals*
-    - Use your compression (Pipe + Extension)
-    - Use your encryption (Pipe + Extension)
-    - Use your Docker-Labels
+    - Use your favorite compression (Pipe + Extension)
+    - Use your favorite encryption (Pipe + Extension)
+    - Use your favorite Docker-Labels
     - Create own target (@see backup-target-ssh.sh)
 
 ### Docker-Container
@@ -143,9 +143,9 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  - BACKUP_FILESYSTEM_PATH="/backups"
  
  # What's up next?
-  - [ ] Backup volumes by label (without dedicated mount)
+  - [ ] Backup volumes by label (without dedicated volume mount)
     - [ ] Add Setting to backup all volumes - exception by labels - or backup specified volumes - by labels
-  - [ ] Only stop containers which are backed up at the moment 
+  - [ ] Only stop containers which are backed up at that time 
   
   
   
