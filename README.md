@@ -145,6 +145,7 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
  # What's up next?
   - [ ] Backup volumes by label (without dedicated volume mount)
     - [ ] Add Setting to backup all volumes - exception by labels - or backup specified volumes - by labels
+    - [ ] Start temporary container to do backup of a cirtain volume (no dependencies that prevent handling volumes)
   - [ ] Only stop containers which are backed up at that time
   - [ ] Configure docker-volume-backup completely by labels
   
