@@ -20,7 +20,7 @@ On-The-Fly backups stop writing backups to your storage before it gets uploaded.
    - Create simple archives 
    - Create iterative Backups
    - Rotate Backup-Files
-   - Backup To Archive first - short downtime for stopped services/container (1st: Archive,  2nd: Compress > Encrypt > Upload)
+   - Backup to local archive file - short downtime for stopped services/container (1st: Archive,  2nd: Compress > Encrypt > Upload)
    - Backup On-The-Fly (Archive > Compress > Encrypt > Upload)
    - Include targets
      - Filesystem 
