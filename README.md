@@ -148,6 +148,9 @@ foo@bar:~$ docker exec -it docker-volume-backup /root/backup-restore.sh backup-v
     - [ ] Start temporary container to do backup of a cirtain volume (no dependencies that prevent from handling volumes)
   - [ ] Only stop containers which are backed up at that time
   - [ ] Configure docker-volume-backup completely by labels
+  - [ ] Clone a volume
+  - [ ] Empty a volume
+  - [ ] Delete a volume
   
   
   
