@@ -5,10 +5,11 @@ SSH_HOST="${SSH_HOST:-}"
 SSH_PORT="${SSH_PORT:-22}"
 SSH_USER="${SSH_USER:-}"
 SSH_REMOTE_PATH="${SSH_REMOTE_PATH:-.}"
+SSH_JUMPHOST="${SSH_JUMPHOST:+-J $SSH_JUMPHOST}"
 
 # Internal
 SSH_CONFIG="-o StrictHostKeyChecking=no -i /root/.ssh/id_rsa"
-SSH="ssh $SSH_CONFIG -p $SSH_PORT"
+SSH="ssh ${SSH_CONFIG} -p ${SSH_PORT}${SSH_JUMPHOST:+ $SSH_JUMPHOST}"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
 function _backupApiVersion() {
