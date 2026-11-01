@@ -25,11 +25,11 @@ function _backupTestConnection() {
 	# WORKAROUND: Permanently add each host to the list of known hosts.
 	chain=""
 	echo > ~/.ssh/known_hosts
-	echo "${SSH_JUMPHOST:+${SSH_JUMPHOST},}${SSH_USER:-$(whoami)}@${SSH_HOST}:${SSH_PORT}" | tr ',' '\n' |
+	echo "${SSH_JUMPHOST}" | tr ',' '\n' |
 	while IFS='@:' read -r user host port; do                                                                                          
 		if ! ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null; \                     
 				then echo "Test Connection To Jumphost [${chain:+-J ${chain} } ${user}@${host}:${port}]... Failed" && exit 1; fi                                                      
-																																   
+																															   
 		chain="${chain:+${chain},}${user}@${host}:${port}"                                                                         
 	done
 
