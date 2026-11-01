@@ -27,8 +27,8 @@ function _backupTestConnection() {
 	echo > ~/.ssh/known_hosts
 	echo "${SSH_JUMPHOST}" | tr ',' '\n' |
 	while IFS='@:' read -r user host port; do                                                                                          
-		if ! ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null; \                     
-				then echo "Test Connection To Jumphost [${chain:+-J ${chain} } ${user}@${host}:${port}]... Failed" && exit 1; fi                                                      
+		echo -n "Test Connection To Jumphost [${user}@${host}:${port}]... " && \
+			if ! ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null; then echo "Failed" && exit 1; else echo "Successed" fi                                                      
 																															   
 		chain="${chain:+${chain},}${user}@${host}:${port}"                                                                         
 	done
