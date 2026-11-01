@@ -6,9 +6,10 @@ SSH_PORT="${SSH_PORT:-22}"
 SSH_USER="${SSH_USER:-}"
 SSH_REMOTE_PATH="${SSH_REMOTE_PATH:-.}"
 SSH_JUMPHOST="${SSH_JUMPHOST:-}"
+SSH_CONNECTTIMEOUT="${SSH_CONNECTTIMEOUT:-10}"
 
 # Internal
-SSH_CONFIG="-o StrictHostKeyChecking=no -i /root/.ssh/id_rsa"
+SSH_CONFIG="-o ConnectTimeout=${SSH_CONNECTTIMEOUT} -o StrictHostKeyChecking=no -i /root/.ssh/id_rsa"
 SSH="ssh ${SSH_JUMPHOST:+-J $SSH_JUMPHOST} ${SSH_CONFIG} -p ${SSH_PORT}"
 SSH_REMOTE="${SSH} ${SSH_USER}@${SSH_HOST}"
 
@@ -25,9 +26,11 @@ function _backupTestConnection() {
 	chain=""
 	echo > ~/.ssh/known_hosts
 	echo "${SSH_JUMPHOST:+${SSH_JUMPHOST},}${SSH_USER:-$(whoami)}@${SSH_HOST}:${SSH_PORT}" | tr ',' '\n' |
-	while IFS='@:' read -r user host port; do
-			ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null || true
-			chain="${chain:+${chain},}${user}@${host}:${port}"
+	while IFS='@:' read -r user host port; do                                                                                          
+		if ! ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null; \                     
+				then echo "Test Connection To Jumphost [${chain:+-J ${chain} } ${user}@${host}:${port}]... Failed" && exit 1; fi                                                      
+																																   
+		chain="${chain:+${chain},}${user}@${host}:${port}"                                                                         
 	done
 
 	echo -n "Test Connection... " && \
