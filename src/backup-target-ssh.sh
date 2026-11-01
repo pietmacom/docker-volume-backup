@@ -26,7 +26,7 @@ function _backupTestConnection() {
 	echo > ~/.ssh/known_hosts
 	echo "${SSH_JUMPHOST:+${SSH_JUMPHOST},}${SSH_USER:-$(whoami)}@${SSH_HOST}:${SSH_PORT}" | tr ',' '\n' |
 	while IFS='@:' read -r user host port; do
-			ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null
+			ssh $SSH_CONFIG ${chain:+-J ${chain}} -p ${port} ${user}@${host} "exit" </dev/null 2>/dev/null || true
 			chain="${chain:+${chain},}${user}@${host}:${port}"
 	done
 
